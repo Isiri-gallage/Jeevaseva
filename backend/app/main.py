@@ -1,5 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.database import engine, Base
+from app.models import User  # import all models
+
+# This line creates all tables in the database automatically!
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="RaktaSeva API 🩸",
