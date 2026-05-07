@@ -27,6 +27,7 @@ class User(Base):
     # Account info
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False)
 
     # Timestamps (automatically set)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

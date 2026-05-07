@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
 from app.models import User, BloodRequest, Donation, ChatMessage
 from app.api.v1 import auth, blood_requests, donors, chat
+from app.api.v1 import auth, blood_requests, donors, chat, admin
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,7 +26,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(blood_requests.router, prefix="/api/v1/requests", tags=["Blood Requests"])
 app.include_router(donors.router, prefix="/api/v1/donors", tags=["Donors"])
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
-
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 @app.get("/", tags=["Root"])
 def root():
     return {

@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     is_available: bool
     city: Optional[str]
     is_verified: bool
+    is_admin: bool
 
     class Config:
         from_attributes = True  # allows reading from database model
