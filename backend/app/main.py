@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
-from app.models import User, BloodRequest
-from app.api.v1 import auth, blood_requests
+from app.models import User, BloodRequest, Donation
+from app.api.v1 import auth, blood_requests, donors
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,7 @@ app.add_middleware(
 # Register routes
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(blood_requests.router, prefix="/api/v1/requests", tags=["Blood Requests"])
+app.include_router(donors.router, prefix="/api/v1/donors", tags=["Donors"])
 
 @app.get("/", tags=["Root"])
 def root():
