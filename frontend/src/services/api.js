@@ -46,6 +46,8 @@ export const donorsAPI = {
   updateAvailability: (isAvailable) =>
     api.patch(`/donors/update-availability?is_available=${isAvailable}`),
   updateDonation: (id, data) => api.patch(`/donors/donations/${id}`, data),
+  getDonation: (id) => api.get(`/donors/donations/${id}`),
+  getDonationByRequest: (requestId) => api.get(`/donors/by-request/${requestId}`),
 };
 
 export const adminAPI = {

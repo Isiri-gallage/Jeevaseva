@@ -5,7 +5,7 @@ import { donorsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Droplets, LogOut, Heart, List,
-  Clock, MapPin, Building2, Phone, Search
+  Clock, MapPin, Building2, Phone, Search, User
 } from 'lucide-react';
 import { URGENCY_COLORS, URGENCY_LABELS, getTimeAgo } from '../../utils/helpers';
 
@@ -59,6 +59,7 @@ const MatchingRequests = () => {
             { icon: <Heart size={18} />, label: 'Donor Dashboard', path: '/donor-dashboard' },
             { icon: <Droplets size={18} />, label: 'Matching Requests', path: '/matching-requests', active: true },
             { icon: <List size={18} />, label: 'My Donations', path: '/my-donations' },
+            { icon: <User size={18} />, label: 'Profile', path: '/profile' },
           ].map((item, i) => (
             <div key={i} style={item.active ? styles.navItemActive : styles.navItem} onClick={() => navigate(item.path)}>
               {item.icon}<span>{item.label}</span>

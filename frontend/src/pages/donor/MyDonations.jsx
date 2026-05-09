@@ -5,7 +5,8 @@ import { donorsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Droplets, LogOut, Heart, List,
-  Clock, CheckCircle, XCircle, AlertCircle
+  Clock, CheckCircle, XCircle, AlertCircle,
+  User, MessageCircle
 } from 'lucide-react';
 import { getTimeAgo } from '../../utils/helpers';
 
@@ -40,10 +41,13 @@ const MyDonations = () => {
     }
   };
 
-  const filtered = filter === 'all' ? donations : donations.filter(d => d.status === filter);
+  const filtered = filter === 'all'
+    ? donations
+    : donations.filter(d => d.status === filter);
 
   return (
     <div style={styles.container}>
+
       {/* Sidebar */}
       <div style={styles.sidebar}>
         <div style={styles.sidebarLogo}>
@@ -55,8 +59,12 @@ const MyDonations = () => {
             { icon: <Heart size={18} />, label: 'Donor Dashboard', path: '/donor-dashboard' },
             { icon: <Droplets size={18} />, label: 'Matching Requests', path: '/matching-requests' },
             { icon: <List size={18} />, label: 'My Donations', path: '/my-donations', active: true },
+            { icon: <User size={18} />, label: 'Profile', path: '/profile' },
           ].map((item, i) => (
-            <div key={i} style={item.active ? styles.navItemActive : styles.navItem} onClick={() => navigate(item.path)}>
+            <div key={i}
+              style={item.active ? styles.navItemActive : styles.navItem}
+              onClick={() => navigate(item.path)}
+            >
               {item.icon}<span>{item.label}</span>
             </div>
           ))}
@@ -66,10 +74,14 @@ const MyDonations = () => {
             <div style={styles.avatar}>{user?.full_name?.charAt(0).toUpperCase()}</div>
             <div>
               <div style={styles.userName}>{user?.full_name}</div>
-              <div style={styles.userBlood}><Droplets size={12} color="#E74C3C" /> {user?.blood_type}</div>
+              <div style={styles.userBlood}>
+                <Droplets size={12} color="#E74C3C" /> {user?.blood_type}
+              </div>
             </div>
           </div>
-          <div style={styles.logoutBtn} onClick={logout}><LogOut size={16} /><span>Logout</span></div>
+          <div style={styles.logoutBtn} onClick={logout}>
+            <LogOut size={16} /><span>Logout</span>
+          </div>
         </div>
       </div>
 
@@ -134,7 +146,11 @@ const MyDonations = () => {
               return (
                 <div key={donation.id} style={styles.donationCard}>
                   <div style={styles.donationLeft}>
-                    <div style={{ ...styles.statusIcon, backgroundColor: config.bg, color: config.color }}>
+                    <div style={{
+                      ...styles.statusIcon,
+                      backgroundColor: config.bg,
+                      color: config.color
+                    }}>
                       {config.icon}
                     </div>
                     <div>
@@ -159,8 +175,15 @@ const MyDonations = () => {
                       {config.icon} {config.label}
                     </div>
 
-                    {/* Action Buttons */}
                     <div style={styles.actionBtns}>
+                      {/* Chat Button */}
+                      <button
+                        style={styles.chatBtn}
+                        onClick={() => navigate(`/chat/${donation.id}`)}
+                      >
+                        <MessageCircle size={14} /> Chat
+                      </button>
+
                       {donation.status === 'pending' && (
                         <>
                           <button
@@ -229,7 +252,10 @@ const styles = {
   userBlood: { display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '13px' },
   logoutBtn: { display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '14px' },
   main: { marginLeft: '260px', flex: 1, padding: '32px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' },
+  header: {
+    display: 'flex', justifyContent: 'space-between',
+    alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px',
+  },
   headerTitle: { fontSize: '32px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
   headerSubtitle: { color: '#7F8C8D', marginTop: '4px' },
   filterTabs: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
@@ -243,7 +269,10 @@ const styles = {
     backgroundColor: '#C0392B', color: 'white', fontSize: '14px',
     cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: '500',
   },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' },
+  statsGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '16px', marginBottom: '24px',
+  },
   statCard: {
     borderRadius: '12px', padding: '20px', textAlign: 'center',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
@@ -252,7 +281,10 @@ const styles = {
   statValue: { fontSize: '28px', fontFamily: 'Playfair Display, serif', fontWeight: '700' },
   statLabel: { fontSize: '12px', color: '#7F8C8D' },
   loading: { textAlign: 'center', padding: '60px', color: '#7F8C8D' },
-  empty: { textAlign: 'center', padding: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
+  empty: {
+    textAlign: 'center', padding: '80px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+  },
   emptyTitle: { fontSize: '20px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
   emptyText: { color: '#7F8C8D', fontSize: '14px' },
   findBtn: {
@@ -264,7 +296,8 @@ const styles = {
   donationCard: {
     backgroundColor: 'white', borderRadius: '16px', padding: '20px 24px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px',
+    display: 'flex', justifyContent: 'space-between',
+    alignItems: 'center', flexWrap: 'wrap', gap: '16px',
   },
   donationLeft: { display: 'flex', alignItems: 'flex-start', gap: '16px' },
   statusIcon: {
@@ -280,7 +313,13 @@ const styles = {
     display: 'flex', alignItems: 'center', gap: '6px',
     padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '500',
   },
-  actionBtns: { display: 'flex', gap: '8px' },
+  actionBtns: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
+  chatBtn: {
+    display: 'flex', alignItems: 'center', gap: '6px',
+    padding: '8px 14px', backgroundColor: '#EBF5FB', color: '#2980B9',
+    borderRadius: '8px', fontSize: '13px', fontWeight: '500',
+    cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif',
+  },
   confirmBtn: {
     display: 'flex', alignItems: 'center', gap: '6px',
     padding: '8px 14px', backgroundColor: '#EAFAF1', color: '#27AE60',

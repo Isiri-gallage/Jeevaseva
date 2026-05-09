@@ -12,7 +12,10 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       authAPI.getMe()
         .then(res => setUser(res.data))
-        .catch(() => localStorage.removeItem('token'))
+        .catch(() => {
+          localStorage.removeItem('token');
+          setUser(null);
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -37,7 +40,20 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
-      {children}
+      {loading ? (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontFamily: 'Playfair Display, serif',
+          fontSize: '24px',
+          color: '#C0392B',
+          backgroundColor: '#FDFEFE',
+        }}>
+          🩸 Loading RaktaSeva...
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 };

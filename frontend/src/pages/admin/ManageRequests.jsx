@@ -5,7 +5,7 @@ import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Users, Droplets, List, LogOut, BarChart2,
-  Shield, Trash2, Search, ArrowLeft,
+  Shield, Trash2, Search, ArrowLeft, User,
   MapPin, Phone, Building2, Clock
 } from 'lucide-react';
 import { URGENCY_COLORS, URGENCY_LABELS, getTimeAgo } from '../../utils/helpers';
@@ -79,6 +79,7 @@ const ManageRequests = () => {
             { icon: <Users size={18} />, label: 'Manage Users', path: '/admin/users' },
             { icon: <List size={18} />, label: 'Manage Requests', path: '/admin/requests', active: true },
             { icon: <Droplets size={18} />, label: 'Blood Requests', path: '/dashboard' },
+            { icon: <User size={18} />, label: 'Profile', path: '/profile' },
           ].map((item, i) => (
             <div
               key={i}

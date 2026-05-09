@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   Users, Droplets, List, LogOut, BarChart2,
   Shield, CheckCircle, Ban, ShieldCheck,
-  Search, ArrowLeft
+  Search, ArrowLeft, User
 } from 'lucide-react';
 
 const ManageUsers = () => {
@@ -98,6 +98,7 @@ const ManageUsers = () => {
             { icon: <Users size={18} />, label: 'Manage Users', path: '/admin/users', active: true },
             { icon: <List size={18} />, label: 'Manage Requests', path: '/admin/requests' },
             { icon: <Droplets size={18} />, label: 'Blood Requests', path: '/dashboard' },
+            { icon: <User size={18} />, label: 'Profile', path: '/profile' },
           ].map((item, i) => (
             <div
               key={i}

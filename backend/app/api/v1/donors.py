@@ -19,14 +19,12 @@ def respond_to_request(
 ):
     """Donor responds to a blood request"""
 
-    # Check if user is a registered donor
     if not current_user.is_donor:
         raise HTTPException(
             status_code=400,
             detail="You must be registered as a donor to respond"
         )
 
-    # Check if request exists
     request = db.query(BloodRequest).filter(
         BloodRequest.id == donation_data.request_id
     ).first()
@@ -34,14 +32,12 @@ def respond_to_request(
     if not request:
         raise HTTPException(status_code=404, detail="Blood request not found")
 
-    # Check if request is still open
     if request.status != RequestStatus.OPEN:
         raise HTTPException(
             status_code=400,
             detail="This blood request is no longer open"
         )
 
-    # Check if donor's blood type is compatible
     compatible_types = get_compatible_donors(request.blood_type)
     if current_user.blood_type not in compatible_types:
         raise HTTPException(
@@ -49,7 +45,6 @@ def respond_to_request(
             detail=f"Your blood type {current_user.blood_type} is not compatible with {request.blood_type}"
         )
 
-    # Check if donor already responded to this request
     existing = db.query(Donation).filter(
         Donation.donor_id == current_user.id,
         Donation.request_id == donation_data.request_id
@@ -61,7 +56,6 @@ def respond_to_request(
             detail="You have already responded to this request"
         )
 
-    # Create donation record
     donation = Donation(
         donor_id=current_user.id,
         request_id=donation_data.request_id,
@@ -89,7 +83,7 @@ def get_my_donations(
     return donations
 
 
-@router.get("/matching-requests", response_model=List)
+@router.get("/matching-requests")
 def get_matching_requests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -102,10 +96,7 @@ def get_matching_requests(
             detail="You must be registered as a donor"
         )
 
-    # Get all blood types this donor can donate to
-    # O+ donor can donate to O+ and AB+ patients
-    can_donate_to = []
-    for patient_type, compatible_donors in {
+    blood_compatibility = {
         "A+":  ["A+", "A-", "O+", "O-"],
         "A-":  ["A-", "O-"],
         "B+":  ["B+", "B-", "O+", "O-"],
@@ -114,17 +105,23 @@ def get_matching_requests(
         "AB-": ["A-", "B-", "AB-", "O-"],
         "O+":  ["O+", "O-"],
         "O-":  ["O-"],
-    }.items():
-        if current_user.blood_type in compatible_donors:
-            can_donate_to.append(patient_type)
+    }
 
-    # Find open requests needing those blood types
-    requests = db.query(BloodRequest).filter(
-        BloodRequest.status == RequestStatus.OPEN,
-        BloodRequest.blood_type.in_(can_donate_to)
-    ).order_by(BloodRequest.created_at.desc()).all()
+    can_donate_to = [
+        patient_type
+        for patient_type, compatible_donors in blood_compatibility.items()
+        if current_user.blood_type in compatible_donors
+    ]
 
-    return requests
+    try:
+        requests = db.query(BloodRequest).filter(
+            BloodRequest.status == RequestStatus.OPEN,
+            BloodRequest.blood_type.in_(can_donate_to)
+        ).order_by(BloodRequest.created_at.desc()).all()
+
+        return requests
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/update-availability")
@@ -149,7 +146,7 @@ def update_donation_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update donation status (confirm, complete or cancel)"""
+    """Update donation status"""
 
     donation = db.query(Donation).filter(
         Donation.id == donation_id
@@ -158,7 +155,6 @@ def update_donation_status(
     if not donation:
         raise HTTPException(status_code=404, detail="Donation not found")
 
-    # Only donor or patient can update
     request = db.query(BloodRequest).filter(
         BloodRequest.id == donation.request_id
     ).first()
@@ -174,3 +170,53 @@ def update_donation_status(
     db.refresh(donation)
 
     return donation
+
+
+@router.get("/donations/{donation_id}")
+def get_donation_by_id(
+    donation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a single donation with patient info"""
+
+    donation = db.query(Donation).filter(Donation.id == donation_id).first()
+    if not donation:
+        raise HTTPException(status_code=404, detail="Donation not found")
+
+    return {
+        "id": donation.id,
+        "donor_id": donation.donor_id,
+        "request_id": donation.request_id,
+        "patient_id": donation.blood_request.patient_id,
+        "status": donation.status,
+        "message": donation.message,
+        "created_at": str(donation.created_at),
+    }
+
+
+@router.get("/by-request/{request_id}")
+def get_donation_by_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get donation for a specific request"""
+
+    donation = db.query(Donation).filter(
+        Donation.request_id == request_id
+    ).first()
+
+    if not donation:
+        raise HTTPException(
+            status_code=404,
+            detail="No donor has responded to this request yet"
+        )
+
+    return {
+        "id": donation.id,
+        "donor_id": donation.donor_id,
+        "request_id": donation.request_id,
+        "patient_id": donation.blood_request.patient_id,
+        "status": donation.status,
+    }

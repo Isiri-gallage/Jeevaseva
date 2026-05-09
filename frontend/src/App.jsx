@@ -26,58 +26,104 @@ import ManageRequests from './pages/admin/ManageRequests';
 
 // Shared
 import Chat from './pages/shared/Chat';
+import Profile from './pages/shared/Profile';
 
-// Route Guards
+// ✅ All Route Guards defined OUTSIDE AppRoutes
+
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen">Loading...</div>;
-  return user ? children : <Navigate to="/login" />;
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" replace />;
 };
 
 const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (!user.is_admin) return <Navigate to="/dashboard" />;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.is_admin) return <Navigate to="/donor-dashboard" replace />;
   return children;
 };
 
 const DonorRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (!user.is_donor) return <Navigate to="/dashboard" />;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.is_donor) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
+const DashboardRoute = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.is_admin) return <Navigate to="/admin" replace />;
+  if (user.is_donor) return <Navigate to="/donor-dashboard" replace />;
+  return <Dashboard />;
+};
+
+const PublicRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (user) {
+    if (user.is_admin) return <Navigate to="/admin" replace />;
+    if (user.is_donor) return <Navigate to="/donor-dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
   return children;
 };
 
 function AppRoutes() {
   return (
     <Routes>
+
       {/* Public */}
       <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={
+        <PublicRoute><Login /></PublicRoute>
+      } />
+      <Route path="/register" element={
+        <PublicRoute><Register /></PublicRoute>
+      } />
+
+      {/* Smart Dashboard */}
+      <Route path="/dashboard" element={<DashboardRoute />} />
 
       {/* Patient */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/create-request" element={<ProtectedRoute><CreateRequest /></ProtectedRoute>} />
-      <Route path="/my-requests" element={<ProtectedRoute><MyRequests /></ProtectedRoute>} />
+      <Route path="/create-request" element={
+        <ProtectedRoute><CreateRequest /></ProtectedRoute>
+      } />
+      <Route path="/my-requests" element={
+        <ProtectedRoute><MyRequests /></ProtectedRoute>
+      } />
 
       {/* Donor */}
-      <Route path="/donor-dashboard" element={<DonorRoute><DonorDashboard /></DonorRoute>} />
-      <Route path="/matching-requests" element={<DonorRoute><MatchingRequests /></DonorRoute>} />
-      <Route path="/my-donations" element={<DonorRoute><MyDonations /></DonorRoute>} />
+      <Route path="/donor-dashboard" element={
+        <DonorRoute><DonorDashboard /></DonorRoute>
+      } />
+      <Route path="/matching-requests" element={
+        <DonorRoute><MatchingRequests /></DonorRoute>
+      } />
+      <Route path="/my-donations" element={
+        <DonorRoute><MyDonations /></DonorRoute>
+      } />
 
       {/* Admin */}
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/users" element={<AdminRoute><ManageUsers /></AdminRoute>} />
-      <Route path="/admin/requests" element={<AdminRoute><ManageRequests /></AdminRoute>} />
+      <Route path="/admin" element={
+        <AdminRoute><AdminDashboard /></AdminRoute>
+      } />
+      <Route path="/admin/users" element={
+        <AdminRoute><ManageUsers /></AdminRoute>
+      } />
+      <Route path="/admin/requests" element={
+        <AdminRoute><ManageRequests /></AdminRoute>
+      } />
 
       {/* Shared */}
-      <Route path="/chat/:donationId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+      <Route path="/profile" element={
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      } />
+      <Route path="/chat/:donationId" element={
+        <ProtectedRoute><Chat /></ProtectedRoute>
+      } />
 
       {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+
     </Routes>
   );
 }
@@ -86,9 +132,12 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" toastOptions={{
-          style: { fontFamily: 'DM Sans, sans-serif' }
-        }} />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: { fontFamily: 'DM Sans, sans-serif' }
+          }}
+        />
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
