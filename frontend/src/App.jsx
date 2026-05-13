@@ -23,6 +23,7 @@ import MyDonations from './pages/donor/MyDonations';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageUsers from './pages/admin/ManageUsers';
 import ManageRequests from './pages/admin/ManageRequests';
+import BloodRequests from './pages/admin/BloodRequests';
 
 // Shared
 import Chat from './pages/shared/Chat';
@@ -111,6 +112,9 @@ function AppRoutes() {
       } />
       <Route path="/admin/requests" element={
         <AdminRoute><ManageRequests /></AdminRoute>
+      } />
+      <Route path="/blood-requests" element={
+        <AdminRoute><BloodRequests /></AdminRoute>
       } />
 
       {/* Shared */}

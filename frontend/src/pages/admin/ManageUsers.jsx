@@ -97,7 +97,7 @@ const ManageUsers = () => {
             { icon: <BarChart2 size={18} />, label: 'Dashboard', path: '/admin' },
             { icon: <Users size={18} />, label: 'Manage Users', path: '/admin/users', active: true },
             { icon: <List size={18} />, label: 'Manage Requests', path: '/admin/requests' },
-            { icon: <Droplets size={18} />, label: 'Blood Requests', path: '/dashboard' },
+            { icon: <Droplets size={18} />, label: 'Blood Requests', path: '/blood-requests' },
             { icon: <User size={18} />, label: 'Profile', path: '/profile' },
           ].map((item, i) => (
             <div
