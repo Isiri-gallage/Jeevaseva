@@ -29,6 +29,12 @@ import BloodRequests from './pages/admin/BloodRequests';
 import Chat from './pages/shared/Chat';
 import Profile from './pages/shared/Profile';
 
+// Kidney Pages
+import KidneyBoard from './pages/kidney/KidneyBoard';
+import PostKidneyRequest from './pages/kidney/PostKidneyRequest';
+import RegisterKidneyDonor from './pages/kidney/RegisterKidneyDonor';
+import MyKidneyRequests from './pages/kidney/MyKidneyRequests';
+
 // ✅ All Route Guards defined OUTSIDE AppRoutes
 
 const ProtectedRoute = ({ children }) => {
@@ -124,6 +130,20 @@ function AppRoutes() {
       <Route path="/chat/:donationId" element={
         <ProtectedRoute><Chat /></ProtectedRoute>
       } />
+
+      {/* Kidney */}
+<Route path="/kidney" element={
+  <ProtectedRoute><KidneyBoard /></ProtectedRoute>
+} />
+<Route path="/kidney/post-request" element={
+  <ProtectedRoute><PostKidneyRequest /></ProtectedRoute>
+} />
+<Route path="/kidney/register-donor" element={
+  <ProtectedRoute><RegisterKidneyDonor /></ProtectedRoute>
+} />
+<Route path="/kidney/my-requests" element={
+  <ProtectedRoute><MyKidneyRequests /></ProtectedRoute>
+} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />

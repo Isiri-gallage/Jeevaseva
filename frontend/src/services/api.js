@@ -28,6 +28,11 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
+  updateProfile: (data) => api.patch('/auth/me', data),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/auth/change-password', null, {
+      params: { current_password: currentPassword, new_password: newPassword }
+    }),
 };
 
 export const requestsAPI = {
@@ -66,4 +71,20 @@ export const chatAPI = {
   getUnreadCount: () => api.get('/chat/unread-count'),
 };
 
+
+export const kidneyAPI = {
+  // Requests
+  createRequest: (data) => api.post('/kidney/requests', data),
+  getAllRequests: () => api.get('/kidney/requests'),
+  getMyRequests: () => api.get('/kidney/requests/my'),
+  updateRequest: (id, data) => api.patch(`/kidney/requests/${id}`, data),
+  deleteRequest: (id) => api.delete(`/kidney/requests/${id}`),
+
+  // Donors
+  registerDonor: (data) => api.post('/kidney/donors/register', data),
+  getAllDonors: () => api.get('/kidney/donors'),
+  getMyDonorProfile: () => api.get('/kidney/donors/my'),
+  updateAvailability: (isAvailable) =>
+    api.patch(`/kidney/donors/availability?is_available=${isAvailable}`),
+};
 export default api;

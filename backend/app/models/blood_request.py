@@ -27,17 +27,17 @@ class BloodRequest(Base):
     patient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Blood details
-    blood_type = Column(String, nullable=False)
+    blood_type = Column(String, nullable=False, index=True)
     units_needed = Column(Integer, default=1)
 
     # Urgency and status
     urgency = Column(Enum(UrgencyLevel), default=UrgencyLevel.MEDIUM)
-    status = Column(Enum(RequestStatus), default=RequestStatus.OPEN)
+    status = Column(Enum(RequestStatus), default=RequestStatus.OPEN, index=True)
 
     # Hospital details
     hospital_name = Column(String, nullable=False)
     hospital_address = Column(String, nullable=False)
-    city = Column(String, nullable=False)
+    city = Column(String, nullable=False, index=True)
 
     # Location for nearby search
     latitude = Column(Float, nullable=True)

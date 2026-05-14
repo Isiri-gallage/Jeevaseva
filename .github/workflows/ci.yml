@@ -1,0 +1,55 @@
+name: RaktaSeva CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-check:
+    runs-on: ubuntu-latest
+    name: Backend Code Check
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Run linting
+        run: |
+          cd backend
+          flake8 app --max-line-length=120 --exclude=__pycache__
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    name: Frontend Build Check
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build
+        run: |
+          cd frontend
+          CI=false npm run build
+        env:
+          CI: false

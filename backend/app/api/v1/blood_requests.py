@@ -52,29 +52,28 @@ def create_blood_request(
 def get_all_requests(
     city: str = None,
     blood_type: str = None,
+    page: int = 1,          # ← add pagination
+    limit: int = 10,        # ← add limit
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all open blood requests, optionally filter by city or blood type"""
+    offset = (page - 1) * limit
 
     query = db.query(BloodRequest).filter(
         BloodRequest.status == RequestStatus.OPEN
     )
 
-    # Filter by city if provided
     if city:
         query = query.filter(BloodRequest.city == city)
-
-    # Filter by blood type compatibility if provided
     if blood_type:
         compatible_types = get_compatible_donors(blood_type)
         query = query.filter(BloodRequest.blood_type.in_(compatible_types))
 
-    # Show most urgent and newest first
+    total = query.count()
     requests = query.order_by(
         BloodRequest.urgency.desc(),
         BloodRequest.created_at.desc()
-    ).all()
+    ).offset(offset).limit(limit).all()
 
     return requests
 
