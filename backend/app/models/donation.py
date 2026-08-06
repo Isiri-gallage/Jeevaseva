@@ -4,11 +4,13 @@ from sqlalchemy.sql import func
 import enum
 from app.core.database import Base
 
+
 class DonationStatus(str, enum.Enum):
     PENDING = "pending"       # Donor said yes, waiting confirmation
     CONFIRMED = "confirmed"   # Both sides confirmed
     COMPLETED = "completed"   # Donation happened
     CANCELLED = "cancelled"   # Cancelled by either side
+
 
 class Donation(Base):
     __tablename__ = "donations"

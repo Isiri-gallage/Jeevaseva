@@ -2,10 +2,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token, SCOPE_WS
 from app.models.user import User
 
 security = HTTPBearer()
+
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -23,6 +24,10 @@ def get_current_user(
 
     payload = decode_token(token)
     if payload is None:
+        raise credentials_exception
+
+    # A WebSocket ticket is not a general-purpose credential.
+    if payload.get("scope") == SCOPE_WS:
         raise credentials_exception
 
     email: str = payload.get("sub")

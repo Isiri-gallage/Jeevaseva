@@ -1,0 +1,16 @@
+[flake8]
+max-line-length = 120
+exclude =
+    venv,
+    .venv,
+    __pycache__,
+    alembic/versions,
+    .pytest_cache
+
+per-file-ignores =
+    # Package __init__ files re-export names for convenience; they are
+    # intentionally "unused" within the module itself.
+    __init__.py:F401
+    # conftest sets environment variables that must be in place before the
+    # application modules are imported, so imports cannot all sit at the top.
+    tests/conftest.py:E402

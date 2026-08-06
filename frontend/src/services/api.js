@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// Configured at build time via frontend/.env (see .env.example).
+// Falls back to the local dev backend so `npm start` works with no setup.
+export const API_BASE_URL =
+  process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+
+// ws:// for http, wss:// for https — derived so deploys don't need a second var.
+export const chatSocketUrl = (ticket) => {
+  const url = new URL(`${API_BASE_URL}/chat/ws`, window.location.origin);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  url.searchParams.set('ticket', ticket);
+  return url.toString();
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,9 +40,11 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   updateProfile: (data) => api.patch('/auth/me', data),
+  // Sent in the request body — query params end up in server and proxy logs.
   changePassword: (currentPassword, newPassword) =>
-    api.post('/auth/change-password', null, {
-      params: { current_password: currentPassword, new_password: newPassword }
+    api.post('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
     }),
 };
 
@@ -68,7 +81,10 @@ export const adminAPI = {
 
 export const chatAPI = {
   getHistory: (donationId) => api.get(`/chat/history/${donationId}`),
+  getKidneyHistory: (matchId) => api.get(`/chat/history/kidney/${matchId}`),
   getUnreadCount: () => api.get('/chat/unread-count'),
+  // Short-lived credential for opening the chat socket.
+  getWsTicket: () => api.post('/chat/ws-ticket'),
 };
 
 
@@ -86,5 +102,11 @@ export const kidneyAPI = {
   getMyDonorProfile: () => api.get('/kidney/donors/my'),
   updateAvailability: (isAvailable) =>
     api.patch(`/kidney/donors/availability?is_available=${isAvailable}`),
+
+  // Matches
+  respondToRequest: (data) => api.post('/kidney/matches/respond', data),
+  getMyMatches: () => api.get('/kidney/matches/my'),
+  getMatchDetails: (id) => api.get(`/kidney/matches/${id}`),
+  updateMatchStatus: (id, status) => api.patch(`/kidney/matches/${id}/status`, { status }),
 };
 export default api;

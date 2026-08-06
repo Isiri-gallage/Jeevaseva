@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { requestsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import Layout from '../../components/layout/Layout';
@@ -11,7 +10,6 @@ import { URGENCY_COLORS, URGENCY_LABELS, getTimeAgo } from '../../utils/helpers'
 import Spinner from '../../components/ui/Spinner';
 
 const BloodRequests = () => {
-  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);

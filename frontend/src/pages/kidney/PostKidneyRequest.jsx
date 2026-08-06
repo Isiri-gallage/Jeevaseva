@@ -4,7 +4,7 @@ import { kidneyAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import Layout from '../../components/layout/Layout';
 import { Heart, ArrowLeft } from 'lucide-react';
-import { BLOOD_TYPES, URGENCY_LEVELS } from '../../utils/helpers';
+import { BLOOD_TYPES } from '../../utils/helpers';
 
 const PostKidneyRequest = () => {
   const navigate = useNavigate();

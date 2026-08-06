@@ -6,14 +6,28 @@ import logging
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.dependencies import get_current_user
+from app.core.rate_limit import (
+    limiter,
+    LOGIN_RATE_LIMIT,
+    REGISTER_RATE_LIMIT,
+    PASSWORD_CHANGE_RATE_LIMIT,
+)
 from app.models.user import User
-from app.schemas.user import UserRegister, UserLogin, UserResponse, Token, UserUpdate
+from app.schemas.user import (
+    UserRegister,
+    UserLogin,
+    UserResponse,
+    Token,
+    UserUpdate,
+    PasswordChange,
+)
 from app.core.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # ─── Register ──────────────────────────────────────────────
+
 
 @router.post(
     "/register",
@@ -22,7 +36,9 @@ logger = logging.getLogger(__name__)
     summary="Register a new user",
     description="Create a new user account with blood type and optional donor registration."
 )
+@limiter.limit(REGISTER_RATE_LIMIT)
 def register(
+    request: Request,
     user_data: UserRegister,
     db: Session = Depends(get_db)
 ):
@@ -74,7 +90,9 @@ def register(
     summary="Login user",
     description="Authenticate with email and password. Returns JWT access token."
 )
+@limiter.limit(LOGIN_RATE_LIMIT)
 def login(
+    request: Request,
     user_data: UserLogin,
     db: Session = Depends(get_db)
 ):
@@ -178,34 +196,30 @@ def update_profile(
     summary="Change password",
     description="Change the current user's password."
 )
+@limiter.limit(PASSWORD_CHANGE_RATE_LIMIT)
 def change_password(
-    current_password: str,
-    new_password: str,
+    request: Request,
+    payload: PasswordChange,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     # Verify current password
-    if not verify_password(current_password, current_user.hashed_password):
+    if not verify_password(payload.current_password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
         )
 
-    # Validate new password
-    if len(new_password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password must be at least 8 characters"
-        )
-
-    if current_password == new_password:
+    # Strength rules live on the PasswordChange schema; only the
+    # "must actually be a change" rule needs the current password here.
+    if payload.current_password == payload.new_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="New password must be different from current password"
         )
 
     # Update password
-    current_user.hashed_password = hash_password(new_password)
+    current_user.hashed_password = hash_password(payload.new_password)
     db.commit()
 
     logger.info(f"Password changed for: {current_user.email}")

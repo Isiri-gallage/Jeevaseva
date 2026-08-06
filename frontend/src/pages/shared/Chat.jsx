@@ -1,70 +1,110 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { chatAPI, donorsAPI } from '../../services/api';
+import { chatAPI, donorsAPI, kidneyAPI, chatSocketUrl } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Send, ArrowLeft, Droplets, Circle } from 'lucide-react';
+import { Send, ArrowLeft, Heart, Circle } from 'lucide-react';
 import Spinner from '../../components/ui/Spinner';
 
-const Chat = () => {
+const Chat = ({ isKidney = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { donationId } = useParams();
+  const { donationId, matchId } = useParams();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
-  const [receiverId, setReceiverId] = useState(null);
+  const [infoText, setInfoText] = useState('');
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    const initChat = async () => {
-      try {
-        const donationRes = await donorsAPI.getDonation(donationId);
-        const donation = donationRes.data;
-        const receiver = user.id === donation.donor_id
-          ? donation.patient_id
-          : donation.donor_id;
-        setReceiverId(receiver);
+  const themeColor = isKidney ? '#8E44AD' : '#C0392B';
+  const secondaryBg = isKidney ? '#F5EEF8' : '#FADBD8';
+  const badgeText = isKidney ? '🫀 Kidney Match' : '🩸 Blood Donation';
 
-        const historyRes = await chatAPI.getHistory(donationId);
-        setMessages(historyRes.data);
+  useEffect(() => {
+    let socket = null;
+    let cancelled = false;
+
+    const loadHistory = async () => {
+      try {
+        if (isKidney) {
+          const matchRes = await kidneyAPI.getMatchDetails(matchId);
+          const match = matchRes.data;
+          setInfoText(`Match with ${user.id === match.donor_id ? match.patient_name : match.donor_name}`);
+
+          const historyRes = await chatAPI.getKidneyHistory(matchId);
+          setMessages(historyRes.data);
+        } else {
+          const donationRes = await donorsAPI.getDonation(donationId);
+          setInfoText(`Blood Request #${donationRes.data.request_id}`);
+
+          const historyRes = await chatAPI.getHistory(donationId);
+          setMessages(historyRes.data);
+        }
       } catch (err) {
-        toast.error('Failed to load chat');
+        toast.error('Failed to load chat details');
       } finally {
         setLoading(false);
       }
     };
 
-    initChat();
+    // The browser WebSocket API cannot send an Authorization header, so we swap
+    // the access token for a 60-second, socket-only ticket first.
+    const openSocket = async () => {
+      try {
+        const { data } = await chatAPI.getWsTicket();
+        if (cancelled) return;
 
-    const token = localStorage.getItem('token');
-    const ws = new WebSocket(`ws://localhost:8000/api/v1/chat/ws/${token}`);
-    ws.onopen = () => setConnected(true);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.donation_id === parseInt(donationId)) {
-        setMessages(prev => [...prev, data]);
+        socket = new WebSocket(chatSocketUrl(data.ticket));
+        socket.onopen = () => setConnected(true);
+        socket.onmessage = (event) => {
+          const payload = JSON.parse(event.data);
+
+          if (payload.error) {
+            toast.error(payload.detail || 'Message could not be sent');
+            return;
+          }
+
+          const belongsHere = isKidney
+            ? payload.kidney_match_id === parseInt(matchId, 10)
+            : payload.donation_id === parseInt(donationId, 10);
+
+          if (belongsHere) setMessages(prev => [...prev, payload]);
+        };
+        socket.onclose = () => setConnected(false);
+        socket.onerror = () => setConnected(false);
+        wsRef.current = socket;
+      } catch (err) {
+        setConnected(false);
+        toast.error('Could not connect to chat');
       }
     };
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-    wsRef.current = ws;
-    return () => ws.close();
-  }, [donationId, user.id]);
+
+    loadHistory();
+    openSocket();
+
+    return () => {
+      cancelled = true;
+      if (socket) socket.close();
+      wsRef.current = null;
+    };
+  }, [donationId, matchId, isKidney, user.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = () => {
-    if (!newMessage.trim() || !wsRef.current || !receiverId) return;
-    wsRef.current.send(JSON.stringify({
-      receiver_id: receiverId,
-      donation_id: parseInt(donationId),
-      message: newMessage.trim(),
-    }));
+    const text = newMessage.trim();
+    if (!text || !connected || wsRef.current?.readyState !== WebSocket.OPEN) return;
+
+    // No receiver_id: the server resolves the recipient from the conversation.
+    wsRef.current.send(JSON.stringify(
+      isKidney
+        ? { kidney_match_id: parseInt(matchId, 10), message: text }
+        : { donation_id: parseInt(donationId, 10), message: text }
+    ));
     setNewMessage('');
   };
 
@@ -85,10 +125,13 @@ const Chat = () => {
             <ArrowLeft size={20} />
           </button>
           <div style={styles.headerLogo}>
-            <Droplets size={20} color="#E74C3C" />
+            <Heart size={20} color={themeColor} />
             <span style={styles.headerTitle}>RaktaSeva Chat</span>
           </div>
-          <div style={styles.donationInfo}>Donation #{donationId}</div>
+          <div style={{ ...styles.donationInfo, backgroundColor: secondaryBg, color: themeColor }}>
+            {badgeText}
+          </div>
+          <div style={styles.infoLabel}>{infoText}</div>
         </div>
         <div style={styles.connectionStatus}>
           <Circle
@@ -108,7 +151,7 @@ const Chat = () => {
           <Spinner />
         ) : messages.length === 0 ? (
           <div style={styles.empty}>
-            <Droplets size={40} color="#E8E8E8" />
+            <Heart size={40} color="#E8E8E8" />
             <p style={styles.emptyText}>No messages yet. Start the conversation!</p>
           </div>
         ) : (
@@ -116,10 +159,10 @@ const Chat = () => {
             const isMe = msg.sender_id === user.id;
             return (
               <div key={i} style={{ ...styles.messageWrapper, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                {!isMe && <div style={styles.senderAvatar}>U</div>}
+                {!isMe && <div style={{ ...styles.senderAvatar, backgroundColor: secondaryBg, color: themeColor }}>{isMe ? 'Me' : 'U'}</div>}
                 <div style={{
                   ...styles.messageBubble,
-                  backgroundColor: isMe ? '#C0392B' : 'white',
+                  backgroundColor: isMe ? themeColor : 'white',
                   color: isMe ? 'white' : '#2C3E50',
                   borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                 }}>
@@ -149,7 +192,7 @@ const Chat = () => {
             rows={1}
           />
           <button
-            style={{ ...styles.sendBtn, backgroundColor: newMessage.trim() && connected ? '#C0392B' : '#E8E8E8' }}
+            style={{ ...styles.sendBtn, backgroundColor: newMessage.trim() && connected ? themeColor : '#E8E8E8' }}
             onClick={handleSend}
             disabled={!newMessage.trim() || !connected}
           >
@@ -164,18 +207,19 @@ const Chat = () => {
 const styles = {
   container: { display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#F2F3F4' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', zIndex: 10 },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' },
   backBtn: { width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#F2F3F4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2C3E50' },
   headerLogo: { display: 'flex', alignItems: 'center', gap: '8px' },
   headerTitle: { fontFamily: 'Playfair Display, serif', fontSize: '18px', color: '#2C3E50' },
-  donationInfo: { backgroundColor: '#FADBD8', color: '#C0392B', padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500' },
+  donationInfo: { padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '600' },
+  infoLabel: { fontSize: '14px', color: '#7F8C8D', fontWeight: '500', marginLeft: '8px' },
   connectionStatus: { display: 'flex', alignItems: 'center', gap: '6px' },
   messagesContainer: { flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' },
   loading: { textAlign: 'center', color: '#7F8C8D', padding: '40px' },
   empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '60px', color: '#7F8C8D' },
   emptyText: { fontSize: '15px', color: '#7F8C8D' },
   messageWrapper: { display: 'flex', alignItems: 'flex-end', gap: '8px' },
-  senderAvatar: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FADBD8', color: '#C0392B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '600', flexShrink: 0 },
+  senderAvatar: { width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '600', flexShrink: 0 },
   messageBubble: { maxWidth: '65%', padding: '12px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   messageText: { fontSize: '15px', lineHeight: '1.5', marginBottom: '4px' },
   messageTime: { fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' },

@@ -1,9 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 from app.models.kidney_request import KidneyRequestStatus
+from app.models.kidney_match import KidneyMatchStatus
 
 # Kidney Request Schemas
+
+
 class KidneyRequestCreate(BaseModel):
     patient_name: str
     patient_age: int
@@ -13,6 +16,7 @@ class KidneyRequestCreate(BaseModel):
     hospital_city: str
     medical_details: Optional[str] = None
     dialysis_duration: Optional[str] = None
+
 
 class KidneyRequestResponse(BaseModel):
     id: int
@@ -28,14 +32,16 @@ class KidneyRequestResponse(BaseModel):
     status: KidneyRequestStatus
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
 
 class KidneyRequestUpdate(BaseModel):
     status: Optional[KidneyRequestStatus] = None
     medical_details: Optional[str] = None
 
 # Kidney Donor Schemas
+
+
 class KidneyDonorCreate(BaseModel):
     full_name: str
     age: int
@@ -44,6 +50,7 @@ class KidneyDonorCreate(BaseModel):
     city: str
     medical_conditions: Optional[str] = None
     reason_to_donate: Optional[str] = None
+
 
 class KidneyDonorResponse(BaseModel):
     id: int
@@ -58,5 +65,53 @@ class KidneyDonorResponse(BaseModel):
     is_available: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Kidney Match Schemas
+
+
+class KidneyMatchCreate(BaseModel):
+    request_id: int
+    message: Optional[str] = None
+
+
+class KidneyMatchUpdate(BaseModel):
+    status: KidneyMatchStatus
+
+
+class KidneyMatchResponse(BaseModel):
+    id: int
+    donor_id: int
+    request_id: int
+    status: KidneyMatchStatus
+    message: Optional[str]
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KidneyMatchDetailResponse(BaseModel):
+    id: int
+    donor_id: int
+    request_id: int
+    status: KidneyMatchStatus
+    message: Optional[str]
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    # Enriched details
+    patient_name: str
+    patient_id: int
+    patient_blood_type: str
+    hospital_name: str
+    hospital_city: str
+    patient_contact: str
+
+    donor_name: str
+    donor_blood_type: str
+    donor_city: str
+    donor_contact: str
+
+    model_config = ConfigDict(from_attributes=True)

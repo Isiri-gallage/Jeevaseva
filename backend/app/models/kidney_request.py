@@ -1,13 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 from app.core.database import Base
 
+
 class KidneyRequestStatus(str, enum.Enum):
     OPEN = "open"
     CLOSED = "closed"
     FULFILLED = "fulfilled"
+
 
 class BloodType(str, enum.Enum):
     A_POS = "A+"
@@ -18,6 +20,7 @@ class BloodType(str, enum.Enum):
     AB_NEG = "AB-"
     O_POS = "O+"
     O_NEG = "O-"
+
 
 class KidneyRequest(Base):
     __tablename__ = "kidney_requests"

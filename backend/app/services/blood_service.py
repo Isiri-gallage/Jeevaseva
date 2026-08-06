@@ -13,12 +13,14 @@ BLOOD_COMPATIBILITY = {
 
 VALID_BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
 
+
 def get_compatible_donors(patient_blood_type: str) -> list:
     """
     Given a patient's blood type, return list of
     compatible donor blood types
     """
     return BLOOD_COMPATIBILITY.get(patient_blood_type, [])
+
 
 def is_valid_blood_type(blood_type: str) -> bool:
     """Check if blood type is valid"""

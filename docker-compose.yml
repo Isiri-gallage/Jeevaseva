@@ -1,0 +1,59 @@
+name: raktaseva
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raktaseva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-raktaseva}
+      POSTGRES_DB: ${POSTGRES_DB:-raktaseva}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Exposed on 5433 so it does not collide with a Postgres already
+      # installed on the host's default 5432.
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raktaseva}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raktaseva}:${POSTGRES_PASSWORD:-raktaseva}@db:5432/${POSTGRES_DB:-raktaseva}
+      # :? makes compose refuse to start if the variable is unset, rather than
+      # silently booting the API with an empty signing key.
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required - copy .env.example to .env and set it}"
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        # Wait for Postgres to actually accept connections, not just to start,
+        # otherwise "alembic upgrade head" races the database and the container
+        # exits before it can serve anything.
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

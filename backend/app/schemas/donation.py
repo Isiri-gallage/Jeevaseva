@@ -1,14 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 from app.models.donation import DonationStatus
 
 # What we RECEIVE when donor responds
+
+
 class DonationCreate(BaseModel):
     request_id: int
     message: Optional[str] = None
 
 # What we SEND BACK
+
+
 class DonationResponse(BaseModel):
     id: int
     donor_id: int
@@ -17,9 +21,10 @@ class DonationResponse(BaseModel):
     message: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # For updating donation status
+
+
 class DonationUpdate(BaseModel):
     status: DonationStatus

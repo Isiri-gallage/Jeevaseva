@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
@@ -9,6 +9,7 @@ from app.schemas.blood_request import BloodRequestCreate, BloodRequestResponse, 
 from app.services.blood_service import is_valid_blood_type, get_compatible_donors
 
 router = APIRouter()
+
 
 @router.post("/", response_model=BloodRequestResponse, status_code=201)
 def create_blood_request(
@@ -22,7 +23,7 @@ def create_blood_request(
     if not is_valid_blood_type(request_data.blood_type):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid blood type. Valid types: A+, A-, B+, B-, AB+, AB-, O+, O-"
+            detail="Invalid blood type. Valid types: A+, A-, B+, B-, AB+, AB-, O+, O-"
         )
 
     # Create the request
@@ -69,7 +70,6 @@ def get_all_requests(
         compatible_types = get_compatible_donors(blood_type)
         query = query.filter(BloodRequest.blood_type.in_(compatible_types))
 
-    total = query.count()
     requests = query.order_by(
         BloodRequest.urgency.desc(),
         BloodRequest.created_at.desc()

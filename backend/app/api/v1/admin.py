@@ -10,6 +10,7 @@ from app.schemas.user import UserResponse
 
 router = APIRouter()
 
+
 @router.get("/stats")
 def get_stats(
     db: Session = Depends(get_db),
@@ -18,7 +19,7 @@ def get_stats(
     """Get overall platform statistics"""
 
     total_users = db.query(User).count()
-    total_donors = db.query(User).filter(User.is_donor == True).count()
+    total_donors = db.query(User).filter(User.is_donor.is_(True)).count()
     total_requests = db.query(BloodRequest).count()
     open_requests = db.query(BloodRequest).filter(BloodRequest.status == RequestStatus.OPEN).count()
     total_donations = db.query(Donation).count()

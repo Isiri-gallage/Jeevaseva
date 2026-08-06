@@ -5,11 +5,12 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.blood_request import BloodRequest, RequestStatus
-from app.models.donation import Donation, DonationStatus
+from app.models.donation import Donation
 from app.schemas.donation import DonationCreate, DonationResponse, DonationUpdate
 from app.services.blood_service import get_compatible_donors
 
 router = APIRouter()
+
 
 @router.post("/respond", response_model=DonationResponse, status_code=201)
 def respond_to_request(

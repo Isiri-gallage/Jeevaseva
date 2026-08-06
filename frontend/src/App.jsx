@@ -10,7 +10,6 @@ import Register from './pages/auth/Register';
 import Home from './pages/Home';
 
 // Patient Pages
-import Dashboard from './pages/patient/Dashboard';
 import CreateRequest from './pages/patient/CreateRequest';
 import MyRequests from './pages/patient/MyRequests';
 
@@ -60,16 +59,14 @@ const DashboardRoute = () => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.is_admin) return <Navigate to="/admin" replace />;
-  if (user.is_donor) return <Navigate to="/donor-dashboard" replace />;
-  return <Dashboard />;
+  return <Navigate to="/kidney" replace />;
 };
 
 const PublicRoute = ({ children }) => {
   const { user } = useAuth();
   if (user) {
     if (user.is_admin) return <Navigate to="/admin" replace />;
-    if (user.is_donor) return <Navigate to="/donor-dashboard" replace />;
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/kidney" replace />;
   }
   return children;
 };
@@ -129,6 +126,9 @@ function AppRoutes() {
       } />
       <Route path="/chat/:donationId" element={
         <ProtectedRoute><Chat /></ProtectedRoute>
+      } />
+      <Route path="/chat/kidney/:matchId" element={
+        <ProtectedRoute><Chat isKidney={true} /></ProtectedRoute>
       } />
 
       {/* Kidney */}

@@ -1,9 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 from app.models.blood_request import UrgencyLevel, RequestStatus
 
 # What we RECEIVE when creating a request
+
+
 class BloodRequestCreate(BaseModel):
     blood_type: str
     units_needed: int = 1
@@ -18,6 +20,8 @@ class BloodRequestCreate(BaseModel):
     notes: Optional[str] = None
 
 # What we SEND BACK
+
+
 class BloodRequestResponse(BaseModel):
     id: int
     patient_id: int
@@ -33,10 +37,11 @@ class BloodRequestResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # For updating a request
+
+
 class BloodRequestUpdate(BaseModel):
     status: Optional[RequestStatus] = None
     notes: Optional[str] = None

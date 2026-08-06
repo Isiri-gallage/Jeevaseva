@@ -1,10 +1,12 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 from app.core.database import Base
 
 # Urgency levels
+
+
 class UrgencyLevel(str, enum.Enum):
     LOW = "low"
     MEDIUM = "medium"
@@ -12,11 +14,14 @@ class UrgencyLevel(str, enum.Enum):
     CRITICAL = "critical"
 
 # Request status
+
+
 class RequestStatus(str, enum.Enum):
     OPEN = "open"
     FULFILLED = "fulfilled"
     EXPIRED = "expired"
     CANCELLED = "cancelled"
+
 
 class BloodRequest(Base):
     __tablename__ = "blood_requests"
@@ -54,4 +59,3 @@ class BloodRequest(Base):
 
     # Relationship - connect to User model
     patient = relationship("User", backref="blood_requests")
-    
