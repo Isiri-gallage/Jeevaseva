@@ -1,0 +1,60 @@
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+@media (min-width: 640px) {
+  .statGrid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 960px) {
+  .statGrid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  text-align: start;
+}
+
+.actionBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.actionTitle {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.actionDesc {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.actionArrow {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.action:hover .actionArrow {
+  transform: translateX(3px);
+  color: var(--color-accent);
+}

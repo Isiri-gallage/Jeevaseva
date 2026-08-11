@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
+import Spinner from '../components/ui/Spinner';
 
 const AuthContext = createContext();
 
@@ -41,17 +42,21 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
       {loading ? (
+        // Token-driven so it matches the active appearance instead of flashing
+        // white while the session is restored.
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-4)',
           justifyContent: 'center',
           alignItems: 'center',
           height: '100vh',
-          fontFamily: 'Playfair Display, serif',
-          fontSize: '24px',
-          color: '#C0392B',
-          backgroundColor: '#FDFEFE',
+          backgroundColor: 'var(--color-bg)',
+          color: 'var(--color-text-secondary)',
+          fontSize: 'var(--text-sm)',
         }}>
-          🩸 Loading RaktaSeva...
+          <Spinner size={28} />
+          Loading RaktaSeva
         </div>
       ) : children}
     </AuthContext.Provider>

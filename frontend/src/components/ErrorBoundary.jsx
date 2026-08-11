@@ -1,9 +1,19 @@
 import { Component } from 'react';
+import { AlertTriangle, Home, RotateCw } from 'lucide-react';
+import styles from './ErrorBoundary.module.css';
 
+/**
+ * Catches render errors anywhere below it and shows a recovery screen instead
+ * of React unmounting the whole tree into a blank white page.
+ *
+ * Must stay a class component: getDerivedStateFromError and componentDidCatch
+ * have no hook equivalent, so this is one of the few places where a class is
+ * still the only option.
+ */
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -11,55 +21,72 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    this.setState({ errorInfo });
+
+    // In production this is where an error reporter (Sentry, Rollbar, …) would
+    // be called. Logging to the console is the honest placeholder until one is
+    // wired up — a crash nobody is told about is a crash nobody fixes.
+    console.error('Uncaught error:', error, errorInfo);
   }
+
+  handleReload = () => {
+    window.location.reload();
+  };
+
+  handleGoHome = () => {
+    // A full navigation rather than a router push: the router lives inside the
+    // tree that just crashed, so it cannot be trusted to still work.
+    window.location.assign('/');
+  };
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div style={styles.container}>
-          <div style={styles.content}>
-            <div style={styles.icon}>⚠️</div>
-            <h1 style={styles.title}>Something went wrong</h1>
-            <p style={styles.message}>
-              An unexpected error occurred. Please refresh the page.
-            </p>
-            <button
-              style={styles.btn}
-              onClick={() => window.location.reload()}
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      );
+    if (!this.state.hasError) {
+      return this.props.children;
     }
 
-    return this.props.children;
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    return (
+      <div className={styles.container} role="alert">
+        <div className={styles.card}>
+          <div className={styles.icon}>
+            <AlertTriangle size={24} />
+          </div>
+
+          <h1 className={styles.title}>Something went wrong</h1>
+
+          <p className={styles.message}>
+            An unexpected error stopped this page from loading. Your data is
+            safe — reloading usually fixes it.
+          </p>
+
+          <div className={styles.actions}>
+            <button className={styles.button} onClick={this.handleReload}>
+              <RotateCw size={16} /> Reload page
+            </button>
+            <button
+              className={`${styles.button} ${styles.buttonSecondary}`}
+              onClick={this.handleGoHome}
+            >
+              <Home size={16} /> Go home
+            </button>
+          </div>
+
+          {isDevelopment && this.state.error && (
+            <details className={styles.details}>
+              <summary className={styles.summary}>
+                Error details (development only)
+              </summary>
+              <pre className={styles.trace}>
+                {this.state.error.toString()}
+                {this.state.errorInfo?.componentStack}
+              </pre>
+            </details>
+          )}
+        </div>
+      </div>
+    );
   }
 }
-
-const styles = {
-  container: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    minHeight: '100vh', backgroundColor: '#F2F3F4',
-  },
-  content: {
-    textAlign: 'center', backgroundColor: 'white',
-    borderRadius: '16px', padding: '48px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)', maxWidth: '400px',
-  },
-  icon: { fontSize: '48px', marginBottom: '16px' },
-  title: {
-    fontSize: '24px', fontFamily: 'Playfair Display, serif',
-    color: '#2C3E50', marginBottom: '12px',
-  },
-  message: { color: '#7F8C8D', marginBottom: '24px', lineHeight: '1.6' },
-  btn: {
-    padding: '12px 32px', backgroundColor: '#C0392B', color: 'white',
-    borderRadius: '10px', border: 'none', fontSize: '15px',
-    fontWeight: '500', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-  },
-};
 
 export default ErrorBoundary;

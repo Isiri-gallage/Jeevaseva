@@ -1,0 +1,53 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10);
+}
+
+/* Fills the viewport minus the header — used for route-level loading. */
+.fullPage {
+  min-height: 60vh;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.spinner {
+  border-radius: 50%;
+  /* The track is the accent at low opacity so the ring reads as one colour
+   * rather than grey-with-a-coloured-bite. */
+  border-style: solid;
+  border-color: var(--color-accent-soft);
+  border-top-color: var(--color-accent);
+  animation: spin 700ms linear infinite;
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Skeleton ─────────────────────────────────────────────
+ * A shimmering placeholder shaped like the content that is loading. Preferable
+ * to a spinner for lists: it communicates layout, so the page does not lurch
+ * when data arrives. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-sunken) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-sunken) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-md);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}

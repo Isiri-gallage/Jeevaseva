@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { ArrowLeft, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { kidneyAPI } from '../../services/api';
-import toast from 'react-hot-toast';
-import Layout from '../../components/layout/Layout';
-import { Heart, ArrowLeft } from 'lucide-react';
+import Layout, { PageHeader } from '../../components/layout/Layout';
+import { Button, Input, Select, Textarea } from '../../components/ui';
 import { BLOOD_TYPES } from '../../utils/helpers';
+import { getErrorMessage, getFieldErrors } from '../../utils/apiError';
+import styles from '../../styles/FormPage.module.css';
 
 const RegisterKidneyDonor = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  // Prefilled from the account so the donor is not retyping what we already
+  // know. Every value stays editable.
   const [form, setForm] = useState({
     full_name: user?.full_name || '',
     age: '',
@@ -21,22 +28,24 @@ const RegisterKidneyDonor = () => {
     reason_to_donate: '',
   });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((previous) => ({ ...previous, [name]: value }));
+    setErrors((previous) => (previous[name] ? { ...previous, [name]: undefined } : previous));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setErrors({});
+
     try {
-      await kidneyAPI.registerDonor({
-        ...form,
-        age: parseInt(form.age),
-      });
-      toast.success('Registered as kidney donor successfully! 🫀');
+      await kidneyAPI.registerDonor({ ...form, age: Number(form.age) });
+      toast.success('You are registered as a living donor.');
       navigate('/kidney');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to register');
+    } catch (error) {
+      setErrors(getFieldErrors(error));
+      toast.error(getErrorMessage(error, 'Could not complete registration'));
     } finally {
       setLoading(false);
     }
@@ -44,129 +53,136 @@ const RegisterKidneyDonor = () => {
 
   return (
     <Layout>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.backBtn} onClick={() => navigate('/kidney')}>
-            <ArrowLeft size={18} />
-          </div>
+      <PageHeader
+        title="Register as a living donor"
+        subtitle="Add yourself to the donor directory so patients know someone is willing to help."
+        actions={
+          <Button variant="ghost" onClick={() => navigate('/kidney')}>
+            <ArrowLeft size={16} /> Back to board
+          </Button>
+        }
+      />
+
+      <div className={styles.wrap}>
+        <div className={styles.callout}>
+          <HeartHandshake size={18} />
           <div>
-            <h1 style={styles.headerTitle}>Register as Kidney Donor</h1>
-            <p style={styles.headerSubtitle}>Express your willingness to donate a kidney</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Info Card */}
-      <div style={styles.infoCard}>
-        <Heart size={24} color="#8E44AD" />
-        <div>
-          <h3 style={styles.infoTitle}>What does this mean?</h3>
-          <p style={styles.infoText}>
-            Registering as a kidney donor means you are <strong>willing to be contacted</strong> by
-            patients who need a kidney. This does not commit you to anything. All decisions are
-            made between you, the patient, and medical professionals.
-          </p>
-        </div>
-      </div>
-
-      <div style={styles.formCard}>
-        <form onSubmit={handleSubmit} style={styles.form}>
-
-          {/* Personal Info */}
-          <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Personal Information</h2>
-            <div style={styles.row}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Full Name *</label>
-                <input type="text" name="full_name" value={form.full_name} onChange={handleChange} style={styles.input} required />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Age *</label>
-                <input type="number" name="age" value={form.age} onChange={handleChange} placeholder="Your age" style={styles.input} required min="18" max="65" />
-              </div>
-            </div>
-            <div style={styles.row}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Blood Type *</label>
-                <select name="blood_type" value={form.blood_type} onChange={handleChange} style={styles.input} required>
-                  <option value="">Select blood type</option>
-                  {BLOOD_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Contact Number *</label>
-                <input type="text" name="contact_number" value={form.contact_number} onChange={handleChange} placeholder="07XXXXXXXX" style={styles.input} required />
-              </div>
-            </div>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>City *</label>
-              <input type="text" name="city" value={form.city} onChange={handleChange} placeholder="Your city" style={styles.input} required />
-            </div>
-          </div>
-
-          {/* Medical Info */}
-          <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Medical Information</h2>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Any Medical Conditions</label>
-              <textarea name="medical_conditions" value={form.medical_conditions} onChange={handleChange} placeholder="List any medical conditions (optional)..." style={styles.textarea} rows={3} />
-            </div>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Reason to Donate</label>
-              <textarea name="reason_to_donate" value={form.reason_to_donate} onChange={handleChange} placeholder="Why do you want to donate? (optional)..." style={styles.textarea} rows={3} />
-            </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div style={styles.disclaimer}>
-            <p style={styles.disclaimerText}>
-              ⚠️ By registering, you confirm that you are voluntarily expressing interest
-              in kidney donation. RaktaSeva does not conduct medical evaluations.
-              All medical procedures must be done through licensed hospitals in Sri Lanka.
-              You can withdraw your registration at any time.
+            <p className={styles.calloutTitle}>Registering commits you to nothing</p>
+            <p className={styles.calloutText}>
+              It means you are willing to be contacted. You decide whether to
+              respond to any request, you can withdraw at any time, and every
+              medical and legal decision happens between you, the patient, and a
+              transplant centre — never on this platform.
             </p>
           </div>
+        </div>
 
-          <div style={styles.submitRow}>
-            <button type="button" style={styles.cancelBtn} onClick={() => navigate('/kidney')}>
-              Cancel
-            </button>
-            <button type="submit" style={loading ? styles.submitBtnDisabled : styles.submitBtn} disabled={loading}>
-              <Heart size={18} />
-              {loading ? 'Registering...' : 'Register as Kidney Donor'}
-            </button>
-          </div>
-        </form>
+        <div className={styles.card}>
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>About you</h2>
+
+              <div className={styles.row}>
+                <Input
+                  label="Full name"
+                  name="full_name"
+                  value={form.full_name}
+                  onChange={handleChange}
+                  error={errors.full_name}
+                  placeholder="Your full name"
+                  required
+                />
+                <Input
+                  label="Age"
+                  type="number"
+                  name="age"
+                  value={form.age}
+                  onChange={handleChange}
+                  error={errors.age}
+                  placeholder="Years"
+                  min={18}
+                  max={100}
+                  hint="Living donors must be 18 or over"
+                  required
+                />
+              </div>
+
+              <div className={styles.row}>
+                <Select
+                  label="Blood type"
+                  name="blood_type"
+                  value={form.blood_type}
+                  onChange={handleChange}
+                  error={errors.blood_type}
+                  options={BLOOD_TYPES}
+                  placeholder="Select blood type"
+                  required
+                />
+                <Input
+                  label="Contact number"
+                  type="tel"
+                  name="contact_number"
+                  value={form.contact_number}
+                  onChange={handleChange}
+                  error={errors.contact_number}
+                  hint="Shared only with a patient you connect with"
+                  placeholder="0771234567"
+                  required
+                />
+              </div>
+
+              <Input
+                label="City"
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+                error={errors.city}
+                hint="Helps patients find donors near their hospital"
+                placeholder="Colombo"
+                required
+              />
+            </section>
+
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Medical background</h2>
+
+              <Textarea
+                label="Existing medical conditions"
+                name="medical_conditions"
+                value={form.medical_conditions}
+                onChange={handleChange}
+                error={errors.medical_conditions}
+                hint="Optional. A transplant centre will assess you properly — this is only for context."
+                placeholder="e.g. none known"
+                rows={3}
+              />
+
+              <Textarea
+                label="Why you want to donate"
+                name="reason_to_donate"
+                value={form.reason_to_donate}
+                onChange={handleChange}
+                error={errors.reason_to_donate}
+                hint="Optional. Shown on your donor card."
+                placeholder="Share as much or as little as you like…"
+                rows={3}
+              />
+            </section>
+
+            <div className={`${styles.actions} ${styles.actionsEnd}`}>
+              <Button type="submit" loading={loading}>
+                Register as donor
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => navigate('/kidney')}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </Layout>
   );
-};
-
-const styles = {
-  header: { marginBottom: '24px' },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
-  backBtn: { width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', color: '#2C3E50' },
-  headerTitle: { fontSize: '28px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  headerSubtitle: { color: '#7F8C8D', marginTop: '4px' },
-  infoCard: { display: 'flex', alignItems: 'flex-start', gap: '16px', backgroundColor: '#F5EEF8', borderRadius: '12px', padding: '20px', marginBottom: '24px', border: '1px solid #D7BDE2' },
-  infoTitle: { fontSize: '16px', fontFamily: 'Playfair Display, serif', color: '#6C3483', marginBottom: '8px' },
-  infoText: { color: '#7D3C98', fontSize: '14px', lineHeight: '1.6' },
-  formCard: { backgroundColor: 'white', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  form: { display: 'flex', flexDirection: 'column', gap: '32px' },
-  section: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  sectionTitle: { fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#2C3E50', paddingBottom: '12px', borderBottom: '2px solid #F2F3F4' },
-  row: { display: 'flex', gap: '16px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
-  label: { fontSize: '14px', fontWeight: '500', color: '#2C3E50' },
-  input: { padding: '12px 16px', borderRadius: '10px', border: '2px solid #E8E8E8', fontSize: '15px', fontFamily: 'DM Sans, sans-serif', backgroundColor: '#F9F9F9', width: '100%' },
-  textarea: { padding: '12px 16px', borderRadius: '10px', border: '2px solid #E8E8E8', fontSize: '15px', fontFamily: 'DM Sans, sans-serif', backgroundColor: '#F9F9F9', width: '100%', resize: 'vertical' },
-  disclaimer: { backgroundColor: '#FEF9E7', border: '1px solid #F39C12', borderRadius: '12px', padding: '16px 20px' },
-  disclaimerText: { color: '#7D6608', fontSize: '14px', lineHeight: '1.6' },
-  submitRow: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
-  cancelBtn: { padding: '14px 28px', borderRadius: '10px', border: '2px solid #E8E8E8', backgroundColor: 'white', color: '#7F8C8D', fontSize: '15px', fontWeight: '500', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' },
-  submitBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 28px', borderRadius: '10px', backgroundColor: '#8E44AD', color: 'white', fontSize: '15px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  submitBtnDisabled: { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 28px', borderRadius: '10px', backgroundColor: '#A569BD80', color: 'white', fontSize: '15px', fontWeight: '500', cursor: 'not-allowed', border: 'none', fontFamily: 'DM Sans, sans-serif' },
 };
 
 export default RegisterKidneyDonor;

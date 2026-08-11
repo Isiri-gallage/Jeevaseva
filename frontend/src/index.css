@@ -1,47 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+/*
+ * Entry stylesheet. Order matters:
+ *   1. Font
+ *   2. Tokens  — defines the variables
+ *   3. Base    — consumes them for global element defaults
+ *
+ * Everything beyond this point lives in per-component *.module.css files.
+ */
 
-:root {
-  --primary: #C0392B;
-  --primary-light: #E74C3C;
-  --primary-dark: #922B21;
-  --white: #FDFEFE;
-  --light-pink: #FADBD8;
-  --dark: #2C3E50;
-  --grey: #7F8C8D;
-  --light-grey: #F2F3F4;
-  --border: #E8E8E8;
-  --success: #27AE60;
-  --warning: #F39C12;
-  --danger: #E74C3C;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --radius: 12px;
-  --radius-sm: 8px;
-}
+/* Inter is metrically compatible with SF Pro. Loading only the weights actually
+ * used (400/500/600/700) keeps the request small — pulling the full variable
+ * range would add ~300KB for glyphs this app never renders. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background-color: var(--light-grey);
-  color: var(--dark);
-  line-height: 1.6;
-}
-
-h1, h2, h3, h4 {
-  font-family: 'Playfair Display', serif;
-}
-
-button { cursor: pointer; border: none; outline: none; }
-input, textarea, select { outline: none; font-family: 'DM Sans', sans-serif; }
-a { text-decoration: none; color: inherit; }
-
-.loading-screen {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 24px;
-  color: var(--primary);
-  font-family: 'Playfair Display', serif;
-}
+@import './styles/tokens.css';
+@import './styles/base.css';

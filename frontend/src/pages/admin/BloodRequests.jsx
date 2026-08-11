@@ -1,146 +1,134 @@
-import { useState, useEffect } from 'react';
-import { requestsAPI } from '../../services/api';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import Layout from '../../components/layout/Layout';
-import {
-  Search, Phone, Building2,
-  MapPin, Clock, Droplets
-} from 'lucide-react';
-import { URGENCY_COLORS, URGENCY_LABELS, getTimeAgo } from '../../utils/helpers';
-import Spinner from '../../components/ui/Spinner';
+import { Building2, Clock, Droplets, MapPin, Phone, Search } from 'lucide-react';
+import { requestsAPI } from '../../services/api';
+import Layout, { PageHeader } from '../../components/layout/Layout';
+import { Badge, Card, EmptyState, Input, Spinner } from '../../components/ui';
+import { getTimeAgo, URGENCY_LABELS, URGENCY_VARIANTS } from '../../utils/helpers';
+import { getErrorMessage } from '../../utils/apiError';
+import cards from '../../styles/Cards.module.css';
+import dash from '../../styles/Dashboard.module.css';
+import table from '../../styles/Table.module.css';
 
 const BloodRequests = () => {
   const [requests, setRequests] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     requestsAPI.getAll()
-      .then(res => { setRequests(res.data); setFiltered(res.data); })
-      .catch(() => toast.error('Failed to load requests'))
+      .then((res) => setRequests(res.data))
+      .catch((error) => toast.error(getErrorMessage(error, 'Could not load blood requests')))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    const q = search.toLowerCase();
-    setFiltered(requests.filter(r =>
-      r.patient_name.toLowerCase().includes(q) ||
-      r.hospital_name.toLowerCase().includes(q) ||
-      r.city.toLowerCase().includes(q) ||
-      r.blood_type.toLowerCase().includes(q)
-    ));
-  }, [search, requests]);
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return requests;
+    return requests.filter((request) =>
+      ['patient_name', 'hospital_name', 'city', 'blood_type']
+        .some((field) => String(request[field] ?? '').toLowerCase().includes(needle))
+    );
+  }, [requests, search]);
+
+  const countByUrgency = (level) =>
+    requests.filter((request) => request.urgency === level).length;
+
+  const stats = [
+    { label: 'Open requests', value: requests.length, tint: dash.iconBlood },
+    { label: 'Critical', value: countByUrgency('critical'), tint: dash.iconBlood },
+    { label: 'High', value: countByUrgency('high'), tint: dash.iconWarning },
+    { label: 'Medium', value: countByUrgency('medium'), tint: dash.iconWarning },
+  ];
 
   return (
     <Layout>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.headerTitle}>Blood Requests</h1>
-          <p style={styles.headerSubtitle}>{filtered.length} open requests across Sri Lanka</p>
-        </div>
-        <div style={styles.searchBox}>
-          <Search size={16} color="#7F8C8D" />
-          <input
-            type="text"
-            placeholder="Search requests..."
+      <PageHeader
+        title="Blood requests"
+        subtitle="Every open blood request across the platform."
+      />
+
+      <div className={dash.statGrid}>
+        {stats.map((stat) => (
+          <Card key={stat.label} padding="md">
+            <div className={dash.stat}>
+              <span className={`${dash.statIcon} ${stat.tint}`}>
+                <Droplets size={18} />
+              </span>
+              <span className={dash.statValue}>{stat.value}</span>
+              <span className={dash.statLabel}>{stat.label}</span>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className={table.toolbar}>
+        <div className={table.search}>
+          <Input
+            type="search"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={styles.searchInput}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by patient, hospital, city or blood type"
+            icon={<Search size={16} />}
+            aria-label="Search blood requests"
           />
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={styles.statsGrid}>
-        {[
-          { label: 'Total Open', value: requests.length, color: '#C0392B', bg: '#FADBD8' },
-          { label: 'Critical', value: requests.filter(r => r.urgency === 'critical').length, color: '#E74C3C', bg: '#FADBD8' },
-          { label: 'High', value: requests.filter(r => r.urgency === 'high').length, color: '#E67E22', bg: '#FEF9E7' },
-          { label: 'Medium', value: requests.filter(r => r.urgency === 'medium').length, color: '#F39C12', bg: '#FEF9E7' },
-        ].map((stat, i) => (
-          <div key={i} style={{ ...styles.statCard, backgroundColor: stat.bg }}>
-            <div style={{ ...styles.statValue, color: stat.color }}>{stat.value}</div>
-            <div style={styles.statLabel}>{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Requests Grid */}
       {loading ? (
-         <Spinner />
-      ) : filtered.length === 0 ? (
-        <div style={styles.empty}>
-          <Droplets size={48} color="#E8E8E8" />
-          <h3 style={styles.emptyTitle}>No requests found</h3>
-        </div>
+        <Spinner fullPage label="Loading requests" />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon={<Droplets size={24} />}
+          title={search ? 'No requests match your search' : 'No open blood requests'}
+          description={
+            search
+              ? 'Try a different hospital, city, or blood type.'
+              : 'New emergency requests will appear here as they are posted.'
+          }
+        />
       ) : (
-        <div style={styles.grid}>
-          {filtered.map(request => (
-            <div key={request.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div style={styles.bloodBadge}>{request.blood_type}</div>
-                <div style={{
-                  ...styles.urgencyBadge,
-                  backgroundColor: URGENCY_COLORS[request.urgency] + '20',
-                  color: URGENCY_COLORS[request.urgency],
-                }}>
-                  {URGENCY_LABELS[request.urgency]}
-                </div>
+        <div className={cards.grid}>
+          {visible.map((request) => (
+            <Card key={request.id} padding="lg">
+              <div className={cards.tags}>
+                <span className={cards.bloodType}>{request.blood_type}</span>
+                <Badge variant={URGENCY_VARIANTS[request.urgency] || 'neutral'} dot>
+                  {URGENCY_LABELS[request.urgency] || request.urgency}
+                </Badge>
               </div>
-              <h3 style={styles.patientName}>{request.patient_name}</h3>
-              <p style={styles.units}>
-                <Droplets size={14} color="#C0392B" />
-                {request.units_needed} unit(s) needed
+
+              <h3 className={cards.name}>{request.patient_name}</h3>
+              <p className={cards.meta}>
+                {request.units_needed} unit{request.units_needed === 1 ? '' : 's'} needed
               </p>
-              <div style={styles.details}>
-                <div style={styles.detailRow}><Building2 size={14} color="#7F8C8D" /><span>{request.hospital_name}</span></div>
-                <div style={styles.detailRow}><MapPin size={14} color="#7F8C8D" /><span>{request.city}</span></div>
-                <div style={styles.detailRow}><Phone size={14} color="#7F8C8D" /><span>{request.contact_number}</span></div>
-                <div style={styles.detailRow}><Clock size={14} color="#7F8C8D" /><span>{getTimeAgo(request.created_at)}</span></div>
+
+              <div className={cards.details}>
+                <span className={cards.detail}>
+                  <Building2 size={15} />
+                  <span className={cards.detailValue}>{request.hospital_name}</span>
+                </span>
+                <span className={cards.detail}>
+                  <MapPin size={15} />
+                  <span className={cards.detailValue}>{request.city}</span>
+                </span>
+                <span className={cards.detail}>
+                  <Phone size={15} />
+                  <span className={cards.detailValue}>{request.contact_number}</span>
+                </span>
+                <span className={cards.detail}>
+                  <Clock size={15} />
+                  <span className={cards.detailValue}>Posted {getTimeAgo(request.created_at)}</span>
+                </span>
               </div>
-              {request.notes && <p style={styles.notes}>"{request.notes}"</p>}
-              <div style={styles.cardFooter}>
-                <span style={styles.requestId}>#{request.id}</span>
-                <a href={`tel:${request.contact_number}`} style={styles.callBtn}>
-                  <Phone size={14} /> Call
-                </a>
-              </div>
-            </div>
+
+              {request.notes && <p className={cards.quote}>{request.notes}</p>}
+            </Card>
           ))}
         </div>
       )}
     </Layout>
   );
-};
-
-const styles = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' },
-  headerTitle: { fontSize: '32px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  headerSubtitle: { color: '#7F8C8D', marginTop: '4px' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'white', borderRadius: '10px', padding: '12px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', width: '280px' },
-  searchInput: { border: 'none', outline: 'none', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', width: '100%', color: '#2C3E50' },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' },
-  statCard: { borderRadius: '16px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  statValue: { fontSize: '32px', fontFamily: 'Playfair Display, serif', fontWeight: '700' },
-  statLabel: { fontSize: '13px', color: '#7F8C8D', marginTop: '4px' },
-  loading: { textAlign: 'center', padding: '60px', color: '#7F8C8D' },
-  empty: { textAlign: 'center', padding: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
-  emptyTitle: { fontSize: '20px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' },
-  card: { backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  cardHeader: { display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' },
-  bloodBadge: { backgroundColor: '#FADBD8', color: '#C0392B', padding: '4px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: '700' },
-  urgencyBadge: { padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500' },
-  patientName: { fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#2C3E50', marginBottom: '6px' },
-  units: { display: 'flex', alignItems: 'center', gap: '6px', color: '#C0392B', fontSize: '14px', fontWeight: '500', marginBottom: '12px' },
-  details: { display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' },
-  detailRow: { display: 'flex', alignItems: 'center', gap: '8px', color: '#7F8C8D', fontSize: '13px' },
-  notes: { color: '#7F8C8D', fontSize: '13px', fontStyle: 'italic', marginBottom: '12px', padding: '10px', backgroundColor: '#F2F3F4', borderRadius: '8px' },
-  cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #F2F3F4' },
-  requestId: { color: '#95A5A6', fontSize: '13px' },
-  callBtn: { display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#FADBD8', color: '#C0392B', padding: '8px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '500', textDecoration: 'none' },
 };
 
 export default BloodRequests;

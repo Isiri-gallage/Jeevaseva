@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { requestsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-import Layout from '../../components/layout/Layout';
-import { Droplets, ArrowLeft } from 'lucide-react';
-import { BLOOD_TYPES, URGENCY_LEVELS } from '../../utils/helpers';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { requestsAPI } from '../../services/api';
+import Layout, { PageHeader } from '../../components/layout/Layout';
+import { Button, Input, Select, Textarea } from '../../components/ui';
+import { BLOOD_TYPES, URGENCY_LABELS, URGENCY_LEVELS } from '../../utils/helpers';
+import { getErrorMessage, getFieldErrors } from '../../utils/apiError';
+import styles from '../../styles/FormPage.module.css';
+
+const URGENCY_OPTIONS = URGENCY_LEVELS.map((level) => ({
+  value: level,
+  label: URGENCY_LABELS[level],
+}));
 
 const CreateRequest = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     blood_type: '',
     units_needed: 1,
@@ -21,19 +30,24 @@ const CreateRequest = () => {
     notes: '',
   });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((previous) => ({ ...previous, [name]: value }));
+    setErrors((previous) => (previous[name] ? { ...previous, [name]: undefined } : previous));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setErrors({});
+
     try {
-      await requestsAPI.create(form);
-      toast.success('Blood request created successfully!');
+      await requestsAPI.create({ ...form, units_needed: Number(form.units_needed) });
+      toast.success('Request posted. Compatible donors have been notified.');
       navigate('/my-requests');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to create request');
+    } catch (error) {
+      setErrors(getFieldErrors(error));
+      toast.error(getErrorMessage(error, 'Could not create the request'));
     } finally {
       setLoading(false);
     }
@@ -41,121 +55,153 @@ const CreateRequest = () => {
 
   return (
     <Layout>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={18} />
-          </div>
+      <PageHeader
+        title="Request blood"
+        subtitle="Post an emergency request. Donors with a compatible blood type in your area will see it."
+        actions={
+          <Button variant="ghost" onClick={() => navigate('/my-requests')}>
+            <ArrowLeft size={16} /> My requests
+          </Button>
+        }
+      />
+
+      <div className={styles.wrap}>
+        <div className={styles.callout}>
+          <AlertCircle size={18} />
           <div>
-            <h1 style={styles.headerTitle}>Create Blood Request</h1>
-            <p style={styles.headerSubtitle}>Post an emergency blood request</p>
+            <p className={styles.calloutTitle}>For life-threatening emergencies, call 1990 first</p>
+            <p className={styles.calloutText}>
+              RaktaSeva helps you find donors, but it is not an emergency service
+              and nobody is guaranteed to respond. Contact your hospital&apos;s
+              blood bank in parallel.
+            </p>
           </div>
         </div>
-      </div>
 
-      <div style={styles.formCard}>
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <div className={styles.card}>
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
 
-          {/* Blood Info */}
-          <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Blood Requirements</h2>
-            <div style={styles.row}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Blood Type *</label>
-                <select name="blood_type" value={form.blood_type} onChange={handleChange} style={styles.input} required>
-                  <option value="">Select blood type</option>
-                  {BLOOD_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Units Needed *</label>
-                <input type="number" name="units_needed" min="1" max="10" value={form.units_needed} onChange={handleChange} style={styles.input} required />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Urgency Level *</label>
-                <select name="urgency" value={form.urgency} onChange={handleChange} style={styles.input} required>
-                  {URGENCY_LEVELS.map(u => <option key={u} value={u}>{u.charAt(0).toUpperCase() + u.slice(1)}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>What is needed</h2>
 
-          {/* Hospital Info */}
-          <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Hospital Information</h2>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Hospital Name *</label>
-              <input type="text" name="hospital_name" value={form.hospital_name} onChange={handleChange} placeholder="e.g. National Hospital Colombo" style={styles.input} required />
-            </div>
-            <div style={styles.row}>
-              <div style={{ ...styles.inputGroup, flex: 2 }}>
-                <label style={styles.label}>Hospital Address *</label>
-                <input type="text" name="hospital_address" value={form.hospital_address} onChange={handleChange} placeholder="Street address" style={styles.input} required />
+              <div className={styles.rowThree}>
+                <Select
+                  label="Blood type"
+                  name="blood_type"
+                  value={form.blood_type}
+                  onChange={handleChange}
+                  error={errors.blood_type}
+                  options={BLOOD_TYPES}
+                  placeholder="Select"
+                  required
+                />
+                <Input
+                  label="Units needed"
+                  type="number"
+                  name="units_needed"
+                  value={form.units_needed}
+                  onChange={handleChange}
+                  error={errors.units_needed}
+                  min={1}
+                  max={20}
+                  required
+                />
+                <Select
+                  label="Urgency"
+                  name="urgency"
+                  value={form.urgency}
+                  onChange={handleChange}
+                  error={errors.urgency}
+                  options={URGENCY_OPTIONS}
+                  required
+                />
               </div>
-              <div style={{ ...styles.inputGroup, flex: 1 }}>
-                <label style={styles.label}>City *</label>
-                <input type="text" name="city" value={form.city} onChange={handleChange} placeholder="Colombo" style={styles.input} required />
-              </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Patient Info */}
-          <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Patient Information</h2>
-            <div style={styles.row}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Patient Name *</label>
-                <input type="text" name="patient_name" value={form.patient_name} onChange={handleChange} placeholder="Full name of patient" style={styles.input} required />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Contact Number *</label>
-                <input type="text" name="contact_number" value={form.contact_number} onChange={handleChange} placeholder="07XXXXXXXX" style={styles.input} required />
-              </div>
-            </div>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Additional Notes</label>
-              <textarea name="notes" value={form.notes} onChange={handleChange} placeholder="Any additional information..." style={styles.textarea} rows={3} />
-            </div>
-          </div>
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Hospital</h2>
 
-          {/* Submit */}
-          <div style={styles.submitRow}>
-            <button type="button" style={styles.cancelBtn} onClick={() => navigate('/dashboard')}>Cancel</button>
-            <button type="submit" style={loading ? styles.submitBtnDisabled : styles.submitBtn} disabled={loading}>
-              <Droplets size={18} />
-              {loading ? 'Creating...' : 'Create Blood Request'}
-            </button>
-          </div>
-        </form>
+              <Input
+                label="Hospital name"
+                name="hospital_name"
+                value={form.hospital_name}
+                onChange={handleChange}
+                error={errors.hospital_name}
+                placeholder="National Hospital Colombo"
+                required
+              />
+
+              <div className={styles.row}>
+                <Input
+                  label="Hospital address"
+                  name="hospital_address"
+                  value={form.hospital_address}
+                  onChange={handleChange}
+                  error={errors.hospital_address}
+                  placeholder="Street address"
+                  required
+                />
+                <Input
+                  label="City"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  error={errors.city}
+                  hint="Used to find donors nearby"
+                  placeholder="Colombo"
+                  required
+                />
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Patient</h2>
+
+              <div className={styles.row}>
+                <Input
+                  label="Patient name"
+                  name="patient_name"
+                  value={form.patient_name}
+                  onChange={handleChange}
+                  error={errors.patient_name}
+                  placeholder="Full name"
+                  required
+                />
+                <Input
+                  label="Contact number"
+                  type="tel"
+                  name="contact_number"
+                  value={form.contact_number}
+                  onChange={handleChange}
+                  error={errors.contact_number}
+                  placeholder="0771234567"
+                  required
+                />
+              </div>
+
+              <Textarea
+                label="Additional notes"
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                error={errors.notes}
+                hint="Optional — ward number, visiting hours, who to ask for"
+                placeholder="Anything that helps a donor find you…"
+                rows={3}
+              />
+            </section>
+
+            <div className={`${styles.actions} ${styles.actionsEnd}`}>
+              <Button type="submit" loading={loading}>Post request</Button>
+              <Button type="button" variant="ghost" onClick={() => navigate('/my-requests')}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </Layout>
   );
-};
-
-const styles = {
-  header: { marginBottom: '24px' },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
-  backBtn: {
-    width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'white',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', color: '#2C3E50',
-  },
-  headerTitle: { fontSize: '28px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  headerSubtitle: { color: '#7F8C8D', marginTop: '4px' },
-  formCard: { backgroundColor: 'white', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  form: { display: 'flex', flexDirection: 'column', gap: '32px' },
-  section: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  sectionTitle: { fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#2C3E50', paddingBottom: '12px', borderBottom: '2px solid #F2F3F4' },
-  row: { display: 'flex', gap: '16px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
-  label: { fontSize: '14px', fontWeight: '500', color: '#2C3E50' },
-  input: { padding: '12px 16px', borderRadius: '10px', border: '2px solid #E8E8E8', fontSize: '15px', fontFamily: 'DM Sans, sans-serif', backgroundColor: '#F9F9F9', width: '100%' },
-  textarea: { padding: '12px 16px', borderRadius: '10px', border: '2px solid #E8E8E8', fontSize: '15px', fontFamily: 'DM Sans, sans-serif', backgroundColor: '#F9F9F9', width: '100%', resize: 'vertical' },
-  submitRow: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
-  cancelBtn: { padding: '14px 28px', borderRadius: '10px', border: '2px solid #E8E8E8', backgroundColor: 'white', color: '#7F8C8D', fontSize: '15px', fontWeight: '500', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' },
-  submitBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 28px', borderRadius: '10px', backgroundColor: '#C0392B', color: 'white', fontSize: '15px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  submitBtnDisabled: { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 28px', borderRadius: '10px', backgroundColor: '#E74C3C80', color: 'white', fontSize: '15px', fontWeight: '500', cursor: 'not-allowed', border: 'none', fontFamily: 'DM Sans, sans-serif' },
 };
 
 export default CreateRequest;

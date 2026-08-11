@@ -1,0 +1,271 @@
+/* Full-height chat: header, scrolling transcript, composer pinned to the base. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  /* dvh follows the mobile browser chrome as it collapses on scroll. Without
+   * it, the composer sits behind Safari's toolbar on iOS. */
+  height: 100dvh;
+  background-color: var(--color-bg);
+}
+
+/* ─── Header ───────────────────────────────────────────────*/
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  padding: var(--space-3) var(--space-4);
+
+  background-color: var(--color-scrim);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.back:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.headerText {
+  min-width: 0;
+  flex: 1;
+}
+
+.headerTitle {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-text-tertiary);
+}
+
+.statusOnline::before {
+  background-color: var(--color-success);
+}
+
+.statusOffline::before {
+  background-color: var(--color-danger);
+}
+
+/* ─── Transcript ───────────────────────────────────────────*/
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.thread {
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+}
+
+.rowMine {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: min(78%, 32rem);
+  padding: var(--space-3) var(--space-4);
+
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+
+  /* Asymmetric radius: the corner nearest the sender is tightened so the bubble
+   * visually points at whoever wrote it. */
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+
+  /* Preserve intentional line breaks, wrap long unbroken strings. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+
+  animation: pop var(--duration-base) var(--ease-out);
+}
+
+.bubbleMine {
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
+  background-color: var(--color-accent);
+  border-color: transparent;
+  color: var(--color-text-on-accent);
+}
+
+.time {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  font-size: 11px;
+  opacity: 0.62;
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.dayDivider {
+  align-self: center;
+  margin: var(--space-4) 0 var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-sunken);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ─── Composer ─────────────────────────────────────────────*/
+
+.composer {
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.composerInner {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 9rem;
+  padding: var(--space-3) var(--space-4);
+
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+  resize: none;
+
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3.5px var(--color-accent-soft);
+}
+
+.send {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-accent);
+  color: #fff;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.send:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.send:disabled {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.notice {
+  max-width: 42rem;
+  margin: 0 auto var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.emptyText {
+  font-size: var(--text-sm);
+  max-width: 32ch;
+  line-height: var(--leading-relaxed);
+}

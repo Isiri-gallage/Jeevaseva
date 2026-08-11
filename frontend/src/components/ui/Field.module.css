@@ -1,0 +1,141 @@
+/*
+ * Form controls — Input, Select, Textarea share this sheet.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-tight);
+}
+
+.required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+/* ─── The control ──────────────────────────────────────────*/
+
+.control {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+
+  font-size: var(--text-base);
+  color: var(--color-text);
+
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.control::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.control:hover:not(:disabled):not(:focus) {
+  border-color: var(--color-text-tertiary);
+}
+
+/*
+ * The focus treatment: accent border plus a soft outer ring.
+ *
+ * box-shadow is used rather than `outline` because it follows border-radius
+ * exactly and does not affect layout. The global :focus-visible ring in
+ * base.css is suppressed here so the two do not stack into a double ring.
+ */
+.control:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3.5px var(--color-accent-soft);
+}
+
+.control:disabled {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+/* ─── Error state ──────────────────────────────────────────*/
+
+.invalid {
+  border-color: var(--color-danger);
+}
+
+.invalid:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3.5px var(--color-danger-soft);
+}
+
+/* ─── Messages ─────────────────────────────────────────────*/
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-danger);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ─── Type-specific ────────────────────────────────────────*/
+
+.textarea {
+  min-height: 104px;
+  resize: vertical;
+  line-height: var(--leading-normal);
+  /* Textareas inherit the browser's monospace default in some engines. */
+  font-family: var(--font-sans);
+}
+
+/*
+ * Native selects cannot be fully styled, so the arrow is drawn as an inline SVG
+ * background and the native one hidden with appearance:none.
+ */
+.select {
+  appearance: none;
+  padding-right: var(--space-10);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238E8E93' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-4) center;
+}
+
+/* ─── Input with a leading icon ────────────────────────────*/
+
+.withIcon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  position: absolute;
+  left: var(--space-4);
+  display: flex;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.withIcon .control {
+  padding-left: var(--space-10);
+}

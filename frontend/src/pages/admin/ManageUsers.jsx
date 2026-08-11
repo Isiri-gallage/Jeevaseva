@@ -1,218 +1,206 @@
-import { useState, useEffect } from 'react';
-import { adminAPI } from '../../services/api';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import Layout from '../../components/layout/Layout';
-import {
-  Search, CheckCircle, Ban,
-  ShieldCheck, ArrowLeft
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Ban, CheckCircle, Search, ShieldCheck, Undo2, Users } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { adminAPI } from '../../services/api';
+import Layout, { PageHeader } from '../../components/layout/Layout';
+import { Badge, Button, EmptyState, Input, Spinner } from '../../components/ui';
+import { getErrorMessage } from '../../utils/apiError';
+import styles from '../../styles/Table.module.css';
 
 const ManageUsers = () => {
-  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     adminAPI.getAllUsers()
-      .then(res => { setUsers(res.data); setFiltered(res.data); })
-      .catch(() => toast.error('Failed to load users'))
+      .then((res) => setUsers(res.data))
+      .catch((error) => toast.error(getErrorMessage(error, 'Could not load users')))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    const q = search.toLowerCase();
-    setFiltered(users.filter(u =>
-      u.full_name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      u.city?.toLowerCase().includes(q)
-    ));
-  }, [search, users]);
-
-  const handleVerify = async (id) => {
+  /** Every row action follows the same shape, so they share one runner. */
+  const runAction = async (id, action, patch, successMessage) => {
+    setBusyId(id);
     try {
-      await adminAPI.verifyUser(id);
-      toast.success('User verified!');
-      setUsers(users.map(u => u.id === id ? { ...u, is_verified: true } : u));
-    } catch { toast.error('Failed to verify user'); }
+      await action(id);
+      toast.success(successMessage);
+      setUsers((previous) =>
+        previous.map((item) => (item.id === id ? { ...item, ...patch } : item))
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not update the user'));
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const handleBan = async (id) => {
-    try {
-      await adminAPI.banUser(id);
-      toast.success('User banned!');
-      setUsers(users.map(u => u.id === id ? { ...u, is_active: false } : u));
-    } catch { toast.error('Failed to ban user'); }
+  const handleBan = (id, name) => {
+    if (!window.confirm(`Suspend ${name}? They will be unable to sign in.`)) return;
+    runAction(id, adminAPI.banUser, { is_active: false }, 'User suspended.');
   };
 
-  const handleUnban = async (id) => {
-    try {
-      await adminAPI.unbanUser(id);
-      toast.success('User unbanned!');
-      setUsers(users.map(u => u.id === id ? { ...u, is_active: true } : u));
-    } catch { toast.error('Failed to unban user'); }
+  const handleMakeAdmin = (id, name) => {
+    // Promotion cannot be undone from this screen, so it gets a confirmation.
+    if (!window.confirm(`Make ${name} an administrator? This grants full access to every user and request.`)) return;
+    runAction(id, adminAPI.makeAdmin, { is_admin: true }, 'User promoted to admin.');
   };
 
-  const handleMakeAdmin = async (id) => {
-    try {
-      await adminAPI.makeAdmin(id);
-      toast.success('User is now admin!');
-      setUsers(users.map(u => u.id === id ? { ...u, is_admin: true } : u));
-    } catch { toast.error('Failed to make admin'); }
-  };
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return users;
+    return users.filter((item) =>
+      ['full_name', 'email', 'city']
+        .some((field) => String(item[field] ?? '').toLowerCase().includes(needle))
+    );
+  }, [users, search]);
 
   return (
     <Layout>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.backBtn} onClick={() => navigate('/admin')}>
-            <ArrowLeft size={18} />
-          </div>
-          <div>
-            <h1 style={styles.headerTitle}>Manage Users</h1>
-            <p style={styles.headerSubtitle}>{filtered.length} users found</p>
-          </div>
-        </div>
-        <div style={styles.searchBox}>
-          <Search size={16} color="#7F8C8D" />
-          <input
-            type="text"
-            placeholder="Search by name, email or city..."
+      <PageHeader
+        title="Manage users"
+        subtitle={loading ? undefined : `${users.length} registered account${users.length === 1 ? '' : 's'}`}
+      />
+
+      <div className={styles.toolbar}>
+        <div className={styles.search}>
+          <Input
+            type="search"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={styles.searchInput}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by name, email or city"
+            icon={<Search size={16} />}
+            aria-label="Search users"
           />
         </div>
       </div>
 
       {loading ? (
-        <div style={styles.loading}>Loading users...</div>
+        <Spinner fullPage label="Loading users" />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon={<Users size={24} />}
+          title={search ? 'No users match your search' : 'No users yet'}
+          description={search ? 'Try a different name, email, or city.' : undefined}
+        />
       ) : (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
+        <div className={styles.scroll}>
+          <table className={styles.table}>
             <thead>
-              <tr style={styles.tableHeader}>
-                <th style={styles.th}>User</th>
-                <th style={styles.th}>Contact</th>
-                <th style={styles.th}>Blood Type</th>
-                <th style={styles.th}>City</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Roles</th>
-                <th style={styles.th}>Actions</th>
+              <tr>
+                <th className={styles.th}>User</th>
+                <th className={styles.th}>Contact</th>
+                <th className={styles.th}>Blood type</th>
+                <th className={styles.th}>Status</th>
+                <th className={styles.th} style={{ textAlign: 'end' }}>Actions</th>
               </tr>
             </thead>
+
             <tbody>
-              {filtered.map(u => (
-                <tr key={u.id} style={styles.tableRow}>
-                  <td style={styles.td}>
-                    <div style={styles.userCell}>
-                      <div style={styles.userAvatar}>{u.full_name?.charAt(0).toUpperCase()}</div>
-                      <div>
-                        <div style={styles.userName2}>{u.full_name}</div>
-                        <div style={styles.userId}>ID: {u.id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.email}>{u.email}</div>
-                    <div style={styles.phone}>{u.phone}</div>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.bloodBadge}>{u.blood_type}</div>
-                  </td>
-                  <td style={styles.td}>
-                    <span style={styles.cityText}>{u.city || '-'}</span>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.statusCell}>
-                      <span style={{ ...styles.statusBadge, backgroundColor: u.is_active ? '#EAFAF1' : '#FADBD8', color: u.is_active ? '#27AE60' : '#C0392B' }}>
-                        {u.is_active ? 'Active' : 'Banned'}
-                      </span>
-                      {u.is_verified && (
-                        <span style={styles.verifiedBadge}>
-                          <CheckCircle size={12} /> Verified
+              {visible.map((item) => {
+                const busy = busyId === item.id;
+                // An admin must not be able to suspend or demote themselves and
+                // lock the whole platform out of administration.
+                const isSelf = item.id === currentUser?.id;
+
+                return (
+                  <tr key={item.id} className={styles.tr}>
+                    <td className={styles.td}>
+                      <div className={styles.person}>
+                        <span className={styles.avatar}>
+                          {item.full_name?.charAt(0).toUpperCase()}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.rolesCell}>
-                      {u.is_admin && <span style={styles.adminRoleBadge}>Admin</span>}
-                      {u.is_donor && <span style={styles.donorRoleBadge}>Donor</span>}
-                      {!u.is_admin && !u.is_donor && <span style={styles.patientRoleBadge}>Patient</span>}
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.actionsCell}>
-                      {!u.is_verified && (
-                        <button style={styles.verifyBtn} onClick={() => handleVerify(u.id)}>
-                          <CheckCircle size={14} /> Verify
-                        </button>
-                      )}
-                      {u.is_active ? (
-                        <button style={styles.banBtn} onClick={() => handleBan(u.id)} disabled={u.is_admin}>
-                          <Ban size={14} /> Ban
-                        </button>
-                      ) : (
-                        <button style={styles.unbanBtn} onClick={() => handleUnban(u.id)}>
-                          <CheckCircle size={14} /> Unban
-                        </button>
-                      )}
-                      {!u.is_admin && (
-                        <button style={styles.makeAdminBtn} onClick={() => handleMakeAdmin(u.id)}>
-                          <ShieldCheck size={14} /> Admin
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <span style={{ minWidth: 0 }}>
+                          <span className={styles.personName}>{item.full_name}</span>
+                          <span className={styles.personMeta}>{item.email}</span>
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className={`${styles.td} ${styles.tdMuted}`}>
+                      {item.phone}
+                      <br />
+                      {item.city || '—'}
+                    </td>
+
+                    <td className={styles.td}>
+                      <Badge variant="blood">{item.blood_type}</Badge>
+                    </td>
+
+                    <td className={styles.td}>
+                      <div className={styles.badges}>
+                        {item.is_admin && <Badge variant="warning">Admin</Badge>}
+                        {item.is_donor && <Badge variant="accent">Donor</Badge>}
+                        {item.is_verified
+                          ? <Badge variant="success">Verified</Badge>
+                          : <Badge variant="neutral">Unverified</Badge>}
+                        {!item.is_active && <Badge variant="danger">Suspended</Badge>}
+                      </div>
+                    </td>
+
+                    <td className={styles.td}>
+                      <div className={styles.rowActions}>
+                        {!item.is_verified && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={busy}
+                            onClick={() => runAction(
+                              item.id, adminAPI.verifyUser, { is_verified: true }, 'User verified.'
+                            )}
+                          >
+                            <CheckCircle size={14} /> Verify
+                          </Button>
+                        )}
+
+                        {!item.is_admin && !isSelf && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={busy}
+                            onClick={() => handleMakeAdmin(item.id, item.full_name)}
+                          >
+                            <ShieldCheck size={14} /> Make admin
+                          </Button>
+                        )}
+
+                        {item.is_active ? (
+                          !isSelf && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() => handleBan(item.id, item.full_name)}
+                            >
+                              <Ban size={14} /> Suspend
+                            </Button>
+                          )
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={busy}
+                            onClick={() => runAction(
+                              item.id, adminAPI.unbanUser, { is_active: true }, 'User restored.'
+                            )}
+                          >
+                            <Undo2 size={14} /> Restore
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
     </Layout>
   );
-};
-
-const styles = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
-  backBtn: { width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', color: '#2C3E50' },
-  headerTitle: { fontSize: '28px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  headerSubtitle: { color: '#7F8C8D', fontSize: '14px', marginTop: '2px' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'white', borderRadius: '10px', padding: '12px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', width: '320px' },
-  searchInput: { border: 'none', outline: 'none', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', width: '100%', color: '#2C3E50' },
-  loading: { textAlign: 'center', padding: '60px', color: '#7F8C8D' },
-  tableContainer: { backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  tableHeader: { backgroundColor: '#F2F3F4' },
-  th: { padding: '14px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#7F8C8D', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  tableRow: { borderTop: '1px solid #F2F3F4' },
-  td: { padding: '16px' },
-  userCell: { display: 'flex', alignItems: 'center', gap: '12px' },
-  userAvatar: { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#FADBD8', color: '#C0392B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '600', flexShrink: 0 },
-  userName2: { fontSize: '14px', fontWeight: '500', color: '#2C3E50' },
-  userId: { fontSize: '12px', color: '#95A5A6' },
-  email: { fontSize: '13px', color: '#2C3E50' },
-  phone: { fontSize: '12px', color: '#7F8C8D' },
-  bloodBadge: { backgroundColor: '#FADBD8', color: '#C0392B', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', display: 'inline-block' },
-  cityText: { fontSize: '13px', color: '#7F8C8D' },
-  statusCell: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  statusBadge: { padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', display: 'inline-block' },
-  verifiedBadge: { display: 'flex', alignItems: 'center', gap: '4px', color: '#27AE60', fontSize: '12px' },
-  rolesCell: { display: 'flex', gap: '4px', flexWrap: 'wrap' },
-  adminRoleBadge: { backgroundColor: '#FEF9E7', color: '#F39C12', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '500' },
-  donorRoleBadge: { backgroundColor: '#FADBD8', color: '#C0392B', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '500' },
-  patientRoleBadge: { backgroundColor: '#EBF5FB', color: '#2980B9', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '500' },
-  actionsCell: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
-  verifyBtn: { display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '6px', backgroundColor: '#EAFAF1', color: '#27AE60', fontSize: '12px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  banBtn: { display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '6px', backgroundColor: '#FADBD8', color: '#C0392B', fontSize: '12px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  unbanBtn: { display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '6px', backgroundColor: '#EAFAF1', color: '#27AE60', fontSize: '12px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  makeAdminBtn: { display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '6px', backgroundColor: '#FEF9E7', color: '#F39C12', fontSize: '12px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
 };
 
 export default ManageUsers;

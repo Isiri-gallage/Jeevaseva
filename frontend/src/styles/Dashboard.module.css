@@ -1,0 +1,156 @@
+/* Shared by DonorDashboard and AdminDashboard. */
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+@media (min-width: 760px) {
+  .statGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+
+/* Tinted icon chips. Kept as modifier classes so a page never hands the
+ * component a raw colour. */
+.iconAccent  { background-color: var(--color-accent-soft);  color: var(--color-accent); }
+.iconBlood   { background-color: var(--color-blood-soft);   color: var(--color-blood); }
+.iconSuccess { background-color: var(--color-success-soft); color: var(--color-success); }
+.iconWarning { background-color: var(--color-warning-soft); color: var(--color-warning); }
+
+.statValue {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tighter);
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ─── Sections ─────────────────────────────────────────────*/
+
+.section {
+  margin-bottom: var(--space-10);
+}
+
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.sectionTitle {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* ─── Availability toggle ──────────────────────────────────*/
+
+.availability {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-8);
+
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.availabilityText {
+  min-width: 0;
+}
+
+.availabilityState {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.availableOn  { color: var(--color-success); }
+.availableOff { color: var(--color-text-tertiary); }
+
+.availabilityHint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/*
+ * A real switch: a checkbox visually replaced by a track and knob.
+ * Built on <input type="checkbox"> rather than a <div>, so it is focusable,
+ * keyboard-operable, and announced correctly by screen readers for free.
+ */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-border-strong);
+  cursor: pointer;
+  transition: background-color var(--duration-base) var(--ease-out);
+}
+
+.switchOn {
+  background-color: var(--color-success);
+}
+
+.switchInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: transform var(--duration-base) var(--ease-spring);
+}
+
+.switchOn .switchKnob {
+  transform: translateX(20px);
+}
+
+.switchInput:focus-visible + .switchKnob {
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}

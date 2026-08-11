@@ -1,0 +1,123 @@
+/*
+ * Shared layout for every "fill in a form" page.
+ *
+ * A CSS Module can be imported by more than one component, so all form pages
+ * share this rather than each defining its own spacing. That is what keeps the
+ * kidney request form and the blood request form visually identical.
+ */
+
+.wrap {
+  max-width: 46rem;
+}
+
+.card {
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 640px) {
+  .card { padding: var(--space-8); }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* ─── Sections ─────────────────────────────────────────────*/
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.sectionTitle {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+/* ─── Field rows ───────────────────────────────────────────
+ * One column on a phone, two side by side once there is room. Fields stay
+ * full-width at narrow sizes because a half-width input on a 375px screen is
+ * too small to read what you typed. */
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 560px) {
+  .row { grid-template-columns: 1fr 1fr; }
+}
+
+.rowThree {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 720px) {
+  .rowThree { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ─── Callout ──────────────────────────────────────────────*/
+
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+
+  border-radius: var(--radius-lg);
+  background-color: var(--color-accent-soft);
+}
+
+.callout svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+.calloutTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.calloutText {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ─── Actions ──────────────────────────────────────────────*/
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+/* The primary action goes first in the DOM so keyboard and screen-reader users
+ * reach it before Cancel; row-reverse puts it visually on the right. */
+.actionsEnd {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}

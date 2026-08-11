@@ -1,223 +1,235 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Users, Shield, Activity, ArrowRight, Droplets } from 'lucide-react';
+import {
+  Heart, Users, Shield, Activity, ArrowRight, Droplets,
+  MessageCircle, CheckCircle2, Lock,
+} from 'lucide-react';
+import { Button, Card, Badge } from '../components/ui';
+import styles from './Home.module.css';
+
+/*
+ * Content lives in arrays above the markup rather than inline in the JSX.
+ * Keeps the render tree readable and makes the copy easy to find and edit
+ * later — the first step toward translating this into Sinhala and Tamil.
+ */
+const STATS = [
+  { value: '150+', label: 'Connections made' },
+  { value: '2,400+', label: 'Registered donors' },
+  { value: 'Free', label: 'Always non-commercial' },
+  { value: '24/7', label: 'Emergency blood board' },
+];
+
+const STEPS = [
+  {
+    step: 'Step 01',
+    icon: <Activity size={20} />,
+    title: 'Post your request',
+    text: 'Share your blood type, hospital, and dialysis history. Compatible donors see it immediately.',
+  },
+  {
+    step: 'Step 02',
+    icon: <Users size={20} />,
+    title: 'A donor reaches out',
+    text: 'Living donors browse open requests and express interest. You choose who to connect with.',
+  },
+  {
+    step: 'Step 03',
+    icon: <MessageCircle size={20} />,
+    title: 'Talk privately',
+    text: 'Accepting a donor opens a private, authenticated chat. Only the two of you can read it.',
+  },
+  {
+    step: 'Step 04',
+    icon: <Shield size={20} />,
+    title: 'Move to the hospital',
+    text: 'Track progress through to handover. Every transplant happens at a registered Sri Lankan hospital.',
+  },
+];
 
 const Home = () => {
   const navigate = useNavigate();
 
   return (
-    <div style={styles.container}>
+    <div className={styles.page}>
 
-      {/* Navbar */}
-      <nav style={styles.navbar}>
-        <div style={styles.logo} onClick={() => navigate('/')}>
-          <span style={styles.logoEmoji}>🫀</span>
-          <span style={styles.logoText}>RaktaSeva</span>
-        </div>
-        <div style={styles.navLinks}>
-          <button style={styles.loginBtn} onClick={() => navigate('/login')}>
-            Log In
+      {/* ─── Navigation ─────────────────────────────────── */}
+      <nav className={styles.nav}>
+        <div className={styles.navInner}>
+          <button className={styles.logo} onClick={() => navigate('/')}>
+            <span className={styles.logoMark}>
+              <Heart size={15} fill="currentColor" />
+            </span>
+            RaktaSeva
           </button>
-          <button style={styles.registerBtn} onClick={() => navigate('/register')}>
-            Get Started
-          </button>
+
+          <div className={styles.navActions}>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
+              Log in
+            </Button>
+            <Button size="sm" pill onClick={() => navigate('/register')}>
+              Get started
+            </Button>
+          </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div style={styles.hero}>
-        <div style={styles.heroContent}>
-          <div style={styles.badge}>
-            <Heart size={14} fill="#8E44AD" color="#8E44AD" />
-            <span>Sri Lanka's Premium Organ & Blood Matching Network</span>
+      {/* ─── Hero ───────────────────────────────────────── */}
+      <header className={styles.hero}>
+        <div className={styles.heroGlow} aria-hidden="true" />
+
+        <div className={`${styles.section} ${styles.heroGrid}`}>
+          <div className={styles.reveal}>
+            <span className={styles.eyebrow}>
+              <Heart size={12} fill="var(--color-accent)" color="var(--color-accent)" />
+              Sri Lanka&apos;s living-donor network
+            </span>
+
+            <h1 className={styles.title}>
+              A kidney patient shouldn&apos;t have to{' '}
+              <span className={styles.titleAccent}>search alone.</span>
+            </h1>
+
+            <p className={styles.lede}>
+              RaktaSeva connects people waiting for a kidney with living donors who
+              want to help — directly, privately, and without a fee. When a match
+              is made, you both take it to a transplant centre from there.
+            </p>
+
+            <div className={styles.heroActions}>
+              <Button size="lg" onClick={() => navigate('/register')}>
+                Find a donor <ArrowRight size={17} />
+              </Button>
+              <Button size="lg" variant="secondary" onClick={() => navigate('/register')}>
+                <Heart size={16} /> Offer to donate
+              </Button>
+            </div>
+
+            <div className={styles.trustRow}>
+              <span className={styles.trustItem}>
+                <CheckCircle2 size={15} color="var(--color-success)" /> Free forever
+              </span>
+              <span className={styles.trustItem}>
+                <Lock size={15} color="var(--color-success)" /> Private by default
+              </span>
+              <span className={styles.trustItem}>
+                <Shield size={15} color="var(--color-success)" /> Hospital-verified handover
+              </span>
+            </div>
           </div>
-          <h1 style={styles.heroTitle}>
-            A Living Gift.<br />
-            <span style={styles.heroHighlight}>Connecting Kidney Donors</span> <br />
-            with Patients.
-          </h1>
-          <p style={styles.heroSubtitle}>
-            A simplified, secure platform for kidney patients to discover willing altruistic donors, 
-            unlock instant coordination chat, and transition smoothly to hospital handovers. 
-            Includes a supportive emergency blood request network.
-          </p>
-          <div style={styles.heroButtons}>
-            <button
-              style={styles.primaryBtn}
-              onClick={() => navigate('/register')}
-            >
-              Register as Kidney Donor <Heart size={16} fill="white" />
-            </button>
-            <button
-              style={styles.secondaryBtn}
-              onClick={() => navigate('/register')}
-            >
-              Need a Kidney? Post Request <ArrowRight size={16} />
-            </button>
+
+          <div className={styles.heroCard}>
+            <span className={`${styles.ring} ${styles.ringOuter}`} aria-hidden="true" />
+            <span className={`${styles.ring} ${styles.ringInner}`} aria-hidden="true" />
+            <span className={styles.heroCardGlyph} role="img" aria-label="Kidney">
+              🫀
+            </span>
+            <span className={styles.heroChip}>O+ → A+ compatible</span>
           </div>
         </div>
-        <div style={styles.heroVisual}>
-          <div style={styles.visualCard}>
-            <div style={styles.visualHeart}>🫀</div>
-            <div style={styles.visualRings}></div>
-            <div style={styles.compatBadge}>O+ ➔ A+ Compatible</div>
-          </div>
-        </div>
-      </div>
+      </header>
 
-      {/* Simplified Stats */}
-      <div style={styles.stats}>
-        {[
-          { number: '150+', label: 'Successful Matches' },
-          { number: '2,400+', label: 'Registered Donors' },
-          { number: '100% Free', label: 'Altruistic & Non-Commercial' },
-          { number: '24/7 Support', label: 'Emergency Blood Network' },
-        ].map((stat, i) => (
-          <div key={i} style={styles.statCard}>
-            <div style={styles.statNumber}>{stat.number}</div>
-            <div style={styles.statLabel}>{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Core Focus Section: Kidney Matching */}
-      <div style={styles.features}>
-        <h2 style={styles.sectionTitle}>How We Connect Patients & Donors</h2>
-        <div style={styles.featureGrid}>
-          {[
-            {
-              icon: <Activity size={32} color="#8E44AD" />,
-              title: 'ABO Cross-Matching',
-              desc: 'Our engine automatically calculates compatibility metrics so patients and donors instantly know if they can match.'
-            },
-            {
-              icon: <Users size={32} color="#8E44AD" />,
-              title: 'Direct Connection',
-              desc: 'Donors express interest, and patients accept. Connection approvals instantly unlock secure direct contact.'
-            },
-            {
-              icon: <MessageSquareIcon size={32} color="#8E44AD" />,
-              title: 'Secure Coordination Chat',
-              desc: 'Introduce yourselves, exchange details, and coordinate your clinical schedules via WebSocket-based real-time chat.'
-            },
-            {
-              icon: <Shield size={32} color="#8E44AD" />,
-              title: 'Hospital Handover',
-              desc: 'Track connection progress directly on the platform until handover is complete. All surgeries happen in registered Sri Lankan hospitals.'
-            },
-          ].map((feature, i) => (
-            <div key={i} style={styles.featureCard}>
-              <div style={styles.featureIcon}>{feature.icon}</div>
-              <h3 style={styles.featureTitle}>{feature.title}</h3>
-              <p style={styles.featureDesc}>{feature.desc}</p>
+      {/* ─── Stats ──────────────────────────────────────── */}
+      <div className={styles.section}>
+        <div className={styles.stats}>
+          {STATS.map((stat) => (
+            <div key={stat.label} className={styles.stat}>
+              <div className={styles.statValue}>{stat.value}</div>
+              <div className={styles.statLabel}>{stat.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Secondary Service Section: Blood Requests */}
-      <div style={styles.bloodSection}>
-        <div style={styles.bloodContainer}>
-          <div style={styles.bloodTextSide}>
-            <div style={styles.bloodBadge}>
-              <Droplets size={14} fill="#C0392B" color="#C0392B" />
-              <span>Emergency Blood Support</span>
-            </div>
-            <h2 style={styles.bloodTitle}>Need Blood Urgently?</h2>
-            <p style={styles.bloodDesc}>
-              RaktaSeva also maintains an emergency-tier blood requests board. 
-              If you or your loved ones require blood units immediately at any Sri Lankan hospital, 
-              post a request and get matched with compatible blood donors nearby in minutes.
+      {/* ─── How it works ───────────────────────────────── */}
+      <section className={`${styles.section} ${styles.sectionBlock}`}>
+        <div className={styles.sectionHead}>
+          <h2 className={styles.sectionTitle}>From request to handover</h2>
+          <p className={styles.sectionLede}>
+            Four steps, each one visible to both sides. No intermediaries, no
+            brokers, and no payment at any point.
+          </p>
+        </div>
+
+        <div className={styles.featureGrid}>
+          {STEPS.map((item) => (
+            <Card key={item.title} padding="lg">
+              <div className={styles.featureIcon}>{item.icon}</div>
+              <div className={styles.featureStep}>{item.step}</div>
+              <h3 className={styles.featureTitle}>{item.title}</h3>
+              <p className={styles.featureText}>{item.text}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Blood donation ─────────────────────────────── */}
+      <section className={`${styles.section} ${styles.sectionBlock}`}>
+        <div className={styles.bloodPanel}>
+          <div>
+            <Badge variant="blood" size="lg">
+              <Droplets size={13} /> Emergency blood
+            </Badge>
+
+            <h2 className={styles.sectionTitle} style={{ marginTop: 'var(--space-5)' }}>
+              Need blood tonight?
+            </h2>
+            <p className={styles.sectionLede} style={{ marginBottom: 'var(--space-8)' }}>
+              The same donor base powers an emergency blood board. Post the
+              hospital and blood type, and compatible donors nearby are notified
+              straight away.
             </p>
-            <button style={styles.bloodBtn} onClick={() => navigate('/register')}>
-              Access Emergency Blood Board
-            </button>
+
+            <Button variant="blood" onClick={() => navigate('/register')}>
+              Open the blood board <ArrowRight size={16} />
+            </Button>
           </div>
-          <div style={styles.bloodIconSide}>
-            <div style={styles.bloodDropAnimation}>🩸</div>
+
+          <div className={styles.bloodGlyph} role="img" aria-label="Blood drop">
+            🩸
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      <div style={styles.cta}>
-        <h2 style={styles.ctaTitle}>Make a Difference Today</h2>
-        <p style={styles.ctaSubtitle}>
-          Whether you want to offer the gift of life as a kidney donor or require emergency blood units, join us.
-        </p>
-        <button
-          style={styles.ctaBtn}
-          onClick={() => navigate('/register')}
-        >
-          Join RaktaSeva Network 🫀
-        </button>
-      </div>
+      {/* ─── CTA ────────────────────────────────────────── */}
+      <section className={styles.section}>
+        <div className={styles.cta}>
+          <h2 className={styles.ctaTitle}>One person can end someone&apos;s wait</h2>
+          <p className={styles.ctaLede}>
+            Whether you are searching for a kidney or willing to give one, joining
+            takes about a minute.
+          </p>
+          <Button size="lg" variant="secondary" pill onClick={() => navigate('/register')}>
+            Join RaktaSeva <ArrowRight size={17} />
+          </Button>
+        </div>
+      </section>
 
-      {/* Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.footerLogo}>🫀 RaktaSeva</div>
-        <p style={styles.footerText}>
-          Serving Life Through Organ & Blood Matching • Sri Lanka
+      {/* ─── Footer ─────────────────────────────────────── */}
+      <footer className={`${styles.section} ${styles.footer}`}>
+        <div className={styles.footerInner}>
+          <div className={styles.logo}>
+            <span className={styles.logoMark}>
+              <Heart size={15} fill="currentColor" />
+            </span>
+            RaktaSeva
+          </div>
+          <p className={styles.footerNote}>
+            Connecting kidney patients and living donors · Sri Lanka
+          </p>
+        </div>
+
+        {/* Stated plainly rather than buried in terms — a platform in this space
+          * has an obligation to be unambiguous about what it is not. */}
+        <p className={styles.disclaimer}>
+          RaktaSeva is a connection platform, not a medical service. We do not
+          perform tissue typing, crossmatch testing, or organ allocation, and we
+          are not involved in any surgical decision. Every connection made here
+          must proceed through a registered transplant centre. Buying or selling
+          organs is illegal in Sri Lanka; this platform is strictly for
+          altruistic, unpaid donation.
         </p>
       </footer>
     </div>
   );
-};
-
-// Simple Lucide wrapper fallback in case of icon mismatch
-const MessageSquareIcon = ({ size, color }) => (
-  <Heart size={size} color={color} fill={color} />
-);
-
-const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#FAF9FC', color: '#2C3E50', fontFamily: 'DM Sans, sans-serif' },
-  navbar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 60px', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', position: 'sticky', top: 0, zIndex: 100 },
-  logo: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '24px', cursor: 'pointer' },
-  logoEmoji: { fontSize: '26px' },
-  logoText: { fontFamily: 'Playfair Display, serif', fontWeight: '700', color: '#8E44AD' },
-  navLinks: { display: 'flex', gap: '12px' },
-  loginBtn: { padding: '10px 24px', borderRadius: '8px', border: '2px solid #8E44AD', backgroundColor: 'transparent', color: '#8E44AD', fontSize: '15px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' },
-  registerBtn: { padding: '10px 24px', borderRadius: '8px', backgroundColor: '#8E44AD', color: 'white', border: 'none', fontSize: '15px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' },
-  hero: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '80px 60px', background: 'linear-gradient(135deg, #FAF9FC 0%, #F5EEF8 100%)', minHeight: '80vh', flexWrap: 'wrap', gap: '40px' },
-  heroContent: { maxWidth: '640px', flex: 1, minWidth: '320px' },
-  badge: { display: 'inline-flex', alignItems: 'center', gap: '8px', backgroundColor: '#F5EEF8', color: '#8E44AD', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', marginBottom: '24px' },
-  heroTitle: { fontSize: '56px', fontFamily: 'Playfair Display, serif', fontWeight: '900', color: '#1B2631', lineHeight: '1.15', marginBottom: '24px' },
-  heroHighlight: { color: '#8E44AD' },
-  heroSubtitle: { fontSize: '17px', color: '#7F8C8D', lineHeight: '1.7', marginBottom: '40px' },
-  heroButtons: { display: 'flex', gap: '16px', flexWrap: 'wrap' },
-  primaryBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '16px 32px', backgroundColor: '#8E44AD', color: 'white', borderRadius: '10px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 4px 16px rgba(142,68,173,0.3)' },
-  secondaryBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '16px 32px', backgroundColor: 'transparent', color: '#8E44AD', borderRadius: '10px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', border: '2px solid #8E44AD', fontFamily: 'DM Sans, sans-serif' },
-  heroVisual: { display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1, minWidth: '300px' },
-  visualCard: { position: 'relative', width: '300px', height: '300px', backgroundColor: 'white', borderRadius: '24px', boxShadow: '0 12px 40px rgba(142,68,173,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
-  visualHeart: { fontSize: '120px', zIndex: 2, filter: 'drop-shadow(0 4px 12px rgba(142,68,173,0.2))' },
-  visualRings: { position: 'absolute', width: '220px', height: '220px', borderRadius: '50%', border: '2px dashed rgba(142,68,173,0.25)', animation: 'spin 30s linear infinite' },
-  compatBadge: { position: 'absolute', bottom: '24px', backgroundColor: '#EBFAF1', color: '#27AE60', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', boxShadow: '0 2px 8px rgba(39,174,96,0.15)' },
-  stats: { display: 'flex', justifyContent: 'space-around', padding: '40px 60px', backgroundColor: '#8E44AD', flexWrap: 'wrap', gap: '24px' },
-  statCard: { textAlign: 'center', color: 'white', minWidth: '150px' },
-  statNumber: { fontSize: '42px', fontFamily: 'Playfair Display, serif', fontWeight: '800' },
-  statLabel: { fontSize: '14px', opacity: 0.85, marginTop: '4px' },
-  features: { padding: '80px 60px', backgroundColor: 'white' },
-  sectionTitle: { fontSize: '38px', fontFamily: 'Playfair Display, serif', textAlign: 'center', color: '#1B2631', marginBottom: '48px' },
-  featureGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto' },
-  featureCard: { backgroundColor: '#FAF9FC', borderRadius: '16px', padding: '32px', textAlign: 'left', border: '1px solid #F5EEF8' },
-  featureIcon: { marginBottom: '20px' },
-  featureTitle: { fontSize: '20px', fontFamily: 'Playfair Display, serif', color: '#1B2631', marginBottom: '12px', fontWeight: '700' },
-  featureDesc: { fontSize: '14.5px', color: '#7F8C8D', lineHeight: '1.6' },
-  bloodSection: { padding: '80px 60px', background: 'linear-gradient(135deg, #FFF5F5 0%, #FADBD8 100%)' },
-  bloodContainer: { display: 'flex', maxWidth: '1100px', margin: '0 auto', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '40px' },
-  bloodTextSide: { flex: 1.2, minWidth: '320px' },
-  bloodBadge: { display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#FADBD8', color: '#C0392B', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' },
-  bloodTitle: { fontSize: '36px', fontFamily: 'Playfair Display, serif', color: '#78281F', marginBottom: '20px' },
-  bloodDesc: { fontSize: '16px', color: '#641E16', lineHeight: '1.7', marginBottom: '32px' },
-  bloodBtn: { padding: '14px 28px', backgroundColor: '#C0392B', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 4px 16px rgba(192,57,43,0.2)' },
-  bloodIconSide: { flex: 0.8, display: 'flex', justifyContent: 'center', minWidth: '240px' },
-  bloodDropAnimation: { fontSize: '110px' },
-  cta: { backgroundColor: '#FAF9FC', padding: '80px 60px', textAlign: 'center', borderTop: '1px solid #F5EEF8' },
-  ctaTitle: { fontSize: '40px', fontFamily: 'Playfair Display, serif', color: '#1B2631', marginBottom: '16px' },
-  ctaSubtitle: { fontSize: '17px', color: '#7F8C8D', marginBottom: '40px', maxWidth: '600px', margin: '0 auto 40px' },
-  ctaBtn: { padding: '18px 48px', backgroundColor: '#8E44AD', color: 'white', border: 'none', borderRadius: '12px', fontSize: '17px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 4px 16px rgba(142,68,173,0.3)' },
-  footer: { backgroundColor: '#1B2631', padding: '40px 60px', textAlign: 'center' },
-  footerLogo: { fontSize: '24px', color: 'white', fontFamily: 'Playfair Display, serif', marginBottom: '8px' },
-  footerText: { color: '#95A5A6', fontSize: '13px' },
 };
 
 export default Home;

@@ -1,0 +1,137 @@
+/*
+ * Crash screen.
+ *
+ * This renders when the React tree below it has thrown, so it deliberately
+ * depends on nothing but the token layer — no context, no UI kit, no data.
+ * The tokens live on :root in index.css, which is loaded before the app mounts,
+ * so they are still available even when everything else has failed.
+ */
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-6);
+  background-color: var(--color-bg);
+}
+
+.card {
+  width: 100%;
+  max-width: 28rem;
+  padding: var(--space-10);
+  text-align: center;
+
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto var(--space-5);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tighter);
+  margin-bottom: var(--space-3);
+}
+
+.message {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  margin-bottom: var(--space-6);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  min-height: 44px;
+  padding: 0 var(--space-5);
+
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-tight);
+
+  background-color: var(--color-accent);
+  color: var(--color-text-on-accent);
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.button:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+.buttonSecondary {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.buttonSecondary:hover {
+  background-color: var(--color-surface-hover);
+}
+
+/* ─── Developer detail ─────────────────────────────────────
+ * Only rendered in development. A stack trace on a production screen tells an
+ * attacker about your internals and tells the user nothing they can act on. */
+.details {
+  margin-top: var(--space-6);
+  text-align: start;
+}
+
+.summary {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  letter-spacing: var(--tracking-normal);
+}
+
+.trace {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  max-height: 12rem;
+  overflow: auto;
+
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

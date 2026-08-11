@@ -1,0 +1,226 @@
+/*
+ * Base layer — reset and global element defaults.
+ *
+ * Loaded after tokens.css so it can use the variables. Everything here applies
+ * to bare HTML elements; component-specific styling belongs in CSS Modules.
+ */
+
+/* ─── Reset ────────────────────────────────────────────────
+ * A modern, minimal reset. box-sizing on the pseudo-elements too, otherwise
+ * ::before/::after silently use content-box and break layouts. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Anchor links and programmatic scrolls animate instead of jumping. */
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+
+  /* Thinner strokes, closer to how type renders on macOS. Without this, Inter
+   * looks noticeably heavier in Chrome than it does in a design tool. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  min-height: 100vh;
+
+  /*
+   * Deliberately NOT transitioning background-color/color here.
+   *
+   * When a transitioned property resolves through a custom property that
+   * changes on an ancestor (:root switching --color-bg for dark mode),
+   * Chromium does not reliably restart the transition — the computed value
+   * stays pinned to the old colour and the theme switch visually no-ops.
+   * Verified: with the transition removed, body correctly repaints to #000.
+   *
+   * Theme switching is instant instead, which is also what macOS and iOS do.
+   */
+}
+
+/* Media should never overflow its container. */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Form controls do not inherit font by default — a browser default that has
+ * surprised developers for twenty years. */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+/* Long words (URLs, emails) break instead of blowing out the layout. */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* ─── Typography ───────────────────────────────────────────
+ * Tracking tightens as size grows. This is the mechanic behind Apple's
+ * headline look: at 56px, default letter-spacing looks loose and amateurish. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text);
+}
+
+h1 { font-size: var(--text-2xl); }
+h2 { font-size: var(--text-xl); }
+h3 { font-size: var(--text-lg); }
+h4 { font-size: var(--text-md); letter-spacing: var(--tracking-tight); }
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+}
+
+/* ─── Focus ────────────────────────────────────────────────
+ * :focus-visible, not :focus. This shows the ring for keyboard users and hides
+ * it for mouse users — you get accessibility without the "ugly outline on
+ * click" that tempts people into the harmful `outline: none`. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Selection ────────────────────────────────────────────*/
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+/* ─── Scrollbars ───────────────────────────────────────────
+ * Thin and unobtrusive, matching the surface rather than the OS default. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-tertiary);
+}
+
+/* ─── Theme switching ──────────────────────────────────────
+ * Applied to <html> for a single frame while the appearance flips.
+ *
+ * Two problems solved at once:
+ *  1. Chromium does not reliably restart a transition when the property's
+ *     value arrives through a custom property that changed on an ancestor,
+ *     so themed surfaces get stuck showing the previous colour.
+ *  2. Without this, every transitioned element on the page cross-fades at its
+ *     own duration, which reads as a smear rather than a mode change.
+ *
+ * macOS and iOS both switch appearance instantly, so this matches the
+ * platform behaviour we are modelling. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+/* ─── Reduced motion ───────────────────────────────────────
+ * Respect the OS accessibility setting. Motion can trigger nausea and migraines
+ * for people with vestibular disorders; this is not optional polish. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Shared utilities ─────────────────────────────────────*/
+
+/* Visually hidden but still announced by screen readers. Use for labels that
+ * are obvious sighted-users but that assistive tech still needs. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

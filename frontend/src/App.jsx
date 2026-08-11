@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -154,17 +155,32 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: { fontFamily: 'DM Sans, sans-serif' }
-          }}
-        />
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    // ThemeProvider sits outermost so the appearance is resolved before
+    // AuthProvider renders its loading screen — otherwise a dark-mode user
+    // gets a white flash on every page load.
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              // Toasts render outside the app tree, so they read the tokens
+              // straight off :root to stay in sync with the active theme.
+              style: {
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'var(--text-sm)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-lg)',
+              },
+            }}
+          />
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

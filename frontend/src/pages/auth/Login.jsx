@@ -1,234 +1,139 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { ArrowLeft, ArrowRight, Heart, Lock, Mail } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Button, Input } from '../../components/ui';
+import { getErrorMessage, getFieldErrors } from '../../utils/apiError';
+import styles from './Auth.module.css';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((previous) => ({ ...previous, [name]: value }));
+    // Clear this field's error as soon as the user edits it — leaving a stale
+    // error under a field they are actively fixing is needlessly discouraging.
+    setErrors((previous) => (previous[name] ? { ...previous, [name]: undefined } : previous));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setErrors({});
+
     try {
       const user = await login(form.email, form.password);
-      toast.success(`Welcome back, ${user.full_name}! 🩸`);
+      toast.success(`Welcome back, ${user.full_name.split(' ')[0]}`);
+
       if (user.is_admin) navigate('/admin');
-      else if (user.is_donor) navigate('/donor-dashboard');
-      else navigate('/dashboard');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Login failed!');
+      else navigate('/kidney');
+    } catch (error) {
+      setErrors(getFieldErrors(error));
+      toast.error(getErrorMessage(error, 'Login failed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      {/* Left Side */}
-      <div style={styles.left}>
-        <div style={styles.leftContent}>
-          <div style={styles.logo}>🩸 RaktaSeva</div>
-          <h1 style={styles.leftTitle}>
-            Serving Life <br />Through Blood
+    <div className={styles.page}>
+
+      {/* ─── Brand panel ────────────────────────────────── */}
+      <aside className={styles.aside}>
+        <Link to="/" className={styles.asideBrand}>
+          <span className={styles.asideMark}>
+            <Heart size={17} fill="currentColor" />
+          </span>
+          RaktaSeva
+        </Link>
+
+        <div className={styles.asideBody}>
+          <h1 className={styles.asideTitle}>
+            Somebody is waiting for the message you send today.
           </h1>
-          <p style={styles.leftSubtitle}>
-            Join thousands of donors saving lives across Sri Lanka every day.
+          <p className={styles.asideText}>
+            Sign in to check your matches, answer a request, or continue a
+            conversation you have already started.
           </p>
-          <div style={styles.bloodDrop}>🩸</div>
         </div>
-      </div>
 
-      {/* Right Side */}
-      <div style={styles.right}>
-        <div style={styles.formContainer}>
-          <h2 style={styles.title}>Welcome Back</h2>
-          <p style={styles.subtitle}>Login to your RaktaSeva account</p>
+        <p className={styles.asideFoot}>
+          RaktaSeva is a free, non-commercial platform. All transplants proceed
+          through registered Sri Lankan hospitals.
+        </p>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="your@email.com"
-                style={styles.input}
-                required
-              />
-            </div>
+        <span className={styles.asideGlyph} aria-hidden="true">🫀</span>
+      </aside>
 
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Password</label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                style={styles.input}
-                required
-              />
-            </div>
+      {/* ─── Form ───────────────────────────────────────── */}
+      <div className={styles.formSide}>
+        <div className={styles.formWrap}>
+          <Link to="/" className={styles.mobileBrand}>
+            <span className={styles.mobileMark}>
+              <Heart size={15} fill="currentColor" />
+            </span>
+            RaktaSeva
+          </Link>
 
-            <button
-              type="submit"
-              style={loading ? styles.btnDisabled : styles.btn}
-              disabled={loading}
-            >
-              {loading ? 'Logging in...' : 'Login →'}
-            </button>
+          <h2 className={styles.title}>Welcome back</h2>
+          <p className={styles.subtitle}>Sign in to your account to continue.</p>
+
+          {/* noValidate turns off the browser's own bubbles so our styled,
+            * screen-reader-linked errors are the only ones shown. */}
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            <Input
+              label="Email address"
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              error={errors.email}
+              placeholder="you@example.com"
+              icon={<Mail size={16} />}
+              autoComplete="email"
+              // Focuses the first field on load so a keyboard user can start
+              // typing immediately.
+              autoFocus
+              required
+            />
+
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              error={errors.password}
+              placeholder="••••••••"
+              icon={<Lock size={16} />}
+              autoComplete="current-password"
+              required
+            />
+
+            <Button type="submit" size="lg" loading={loading} fullWidth>
+              Sign in <ArrowRight size={17} />
+            </Button>
           </form>
 
-          <p style={styles.switchText}>
-            Don't have an account?{' '}
-            <Link to="/register" style={styles.link}>
-              Register here
-            </Link>
+          <p className={styles.switch}>
+            New to RaktaSeva?{' '}
+            <Link to="/register" className={styles.link}>Create an account</Link>
           </p>
 
-          <Link to="/" style={styles.backLink}>
-            ← Back to Home
+          <Link to="/" className={styles.backHome}>
+            <ArrowLeft size={15} /> Back to home
           </Link>
         </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: 'flex',
-    minHeight: '100vh',
-  },
-  left: {
-    flex: 1,
-    background: 'linear-gradient(135deg, #C0392B 0%, #922B21 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '60px',
-  },
-  leftContent: {
-    color: 'white',
-    maxWidth: '400px',
-  },
-  logo: {
-    fontSize: '22px',
-    fontFamily: 'Playfair Display, serif',
-    marginBottom: '40px',
-    opacity: 0.9,
-  },
-  leftTitle: {
-    fontSize: '52px',
-    fontFamily: 'Playfair Display, serif',
-    fontWeight: '900',
-    lineHeight: '1.1',
-    marginBottom: '20px',
-  },
-  leftSubtitle: {
-    fontSize: '16px',
-    opacity: 0.85,
-    lineHeight: '1.7',
-    marginBottom: '40px',
-  },
-  bloodDrop: {
-    fontSize: '100px',
-  },
-  right: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '60px',
-    backgroundColor: '#FDFEFE',
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: '420px',
-  },
-  title: {
-    fontSize: '36px',
-    fontFamily: 'Playfair Display, serif',
-    color: '#2C3E50',
-    marginBottom: '8px',
-  },
-  subtitle: {
-    color: '#7F8C8D',
-    marginBottom: '40px',
-    fontSize: '15px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#2C3E50',
-  },
-  input: {
-    padding: '14px 16px',
-    borderRadius: '10px',
-    border: '2px solid #E8E8E8',
-    fontSize: '15px',
-    fontFamily: 'DM Sans, sans-serif',
-    transition: 'border-color 0.2s',
-    backgroundColor: '#F2F3F4',
-  },
-  btn: {
-    padding: '16px',
-    backgroundColor: '#C0392B',
-    color: 'white',
-    borderRadius: '10px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    fontFamily: 'DM Sans, sans-serif',
-    marginTop: '8px',
-    boxShadow: '0 4px 16px rgba(192,57,43,0.3)',
-  },
-  btnDisabled: {
-    padding: '16px',
-    backgroundColor: '#E74C3C80',
-    color: 'white',
-    borderRadius: '10px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'not-allowed',
-    fontFamily: 'DM Sans, sans-serif',
-    marginTop: '8px',
-  },
-  switchText: {
-    textAlign: 'center',
-    marginTop: '24px',
-    color: '#7F8C8D',
-    fontSize: '15px',
-  },
-  link: {
-    color: '#C0392B',
-    fontWeight: '600',
-  },
-  backLink: {
-    display: 'block',
-    textAlign: 'center',
-    marginTop: '16px',
-    color: '#95A5A6',
-    fontSize: '14px',
-  },
 };
 
 export default Login;

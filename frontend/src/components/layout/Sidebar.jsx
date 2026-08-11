@@ -1,187 +1,212 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import {
-  Droplets, LogOut, User, Heart, BarChart2, Users
+  BarChart2, Droplets, FilePlus2, Heart, HeartHandshake, LayoutGrid,
+  LogOut, Moon, Sun, User, Users, ClipboardList, Inbox,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import styles from './Sidebar.module.css';
 
-// ─── Simple Linear Nav configs per role ─────────────────────
+/*
+ * Navigation is data, not markup.
+ *
+ * Each role gets a list of groups; the component just renders whatever it is
+ * handed. Adding a page later means adding one object here rather than editing
+ * JSX in three places.
+ *
+ * `exact: true` marks routes that should only highlight on an precise match —
+ * without it, /kidney would stay highlighted while you are on
+ * /kidney/my-requests, which makes the sidebar look broken.
+ */
+const KIDNEY_GROUP = {
+  label: 'Kidney',
+  items: [
+    { icon: <LayoutGrid size={17} />, label: 'Kidney board', path: '/kidney', exact: true },
+    { icon: <FilePlus2 size={17} />, label: 'Post a request', path: '/kidney/post-request' },
+    { icon: <ClipboardList size={17} />, label: 'My requests', path: '/kidney/my-requests' },
+    { icon: <HeartHandshake size={17} />, label: 'Register as donor', path: '/kidney/register-donor' },
+  ],
+};
 
-const ADMIN_NAV = [
-  { icon: <BarChart2 size={17} />, label: 'Admin Stats', path: '/admin' },
-  { icon: <Users size={17} />, label: 'Manage Users', path: '/admin/users' },
-  { icon: <Heart size={17} fill="#8E44AD" color="#8E44AD" />, label: 'Kidney Match Hub', path: '/kidney', kidney: true },
-  { icon: <Droplets size={17} />, label: 'Emergency Blood Requests', path: '/blood-requests' },
-  { icon: <User size={17} />, label: 'My Profile', path: '/profile' },
-];
+const ACCOUNT_GROUP = {
+  label: 'Account',
+  items: [{ icon: <User size={17} />, label: 'Profile', path: '/profile' }],
+};
 
-const DONOR_NAV = [
-  { icon: <Heart size={17} fill="#8E44AD" color="#8E44AD" />, label: 'Kidney Connection Hub', path: '/kidney', kidney: true },
-  { icon: <Droplets size={17} />, label: 'Emergency Blood Board', path: '/donor-dashboard' },
-  { icon: <User size={17} />, label: 'My Profile', path: '/profile' },
-];
+const NAV_BY_ROLE = {
+  admin: [
+    {
+      label: 'Administration',
+      items: [
+        { icon: <BarChart2 size={17} />, label: 'Dashboard', path: '/admin', exact: true },
+        { icon: <Users size={17} />, label: 'Manage users', path: '/admin/users' },
+        { icon: <Inbox size={17} />, label: 'Manage requests', path: '/admin/requests' },
+        { icon: <Droplets size={17} />, label: 'Blood requests', path: '/blood-requests' },
+      ],
+    },
+    KIDNEY_GROUP,
+    ACCOUNT_GROUP,
+  ],
 
-const PATIENT_NAV = [
-  { icon: <Heart size={17} fill="#8E44AD" color="#8E44AD" />, label: 'Kidney Connection Hub', path: '/kidney', kidney: true },
-  { icon: <Droplets size={17} />, label: 'Emergency Blood Board', path: '/dashboard' },
-  { icon: <User size={17} />, label: 'My Profile', path: '/profile' },
-];
+  donor: [
+    KIDNEY_GROUP,
+    {
+      label: 'Blood',
+      items: [
+        { icon: <Droplets size={17} />, label: 'Donor dashboard', path: '/donor-dashboard' },
+        { icon: <Heart size={17} />, label: 'Matching requests', path: '/matching-requests' },
+        { icon: <ClipboardList size={17} />, label: 'My donations', path: '/my-donations' },
+      ],
+    },
+    ACCOUNT_GROUP,
+  ],
 
-// ─── Sidebar Component ─────────────────────────────────────
+  patient: [
+    KIDNEY_GROUP,
+    {
+      label: 'Blood',
+      items: [
+        { icon: <FilePlus2 size={17} />, label: 'Request blood', path: '/create-request' },
+        { icon: <ClipboardList size={17} />, label: 'My blood requests', path: '/my-requests' },
+      ],
+    },
+    ACCOUNT_GROUP,
+  ],
+};
 
-const Sidebar = () => {
+const roleOf = (user) => {
+  if (user?.is_admin) return 'admin';
+  if (user?.is_donor) return 'donor';
+  return 'patient';
+};
+
+const ROLE_LABEL = {
+  admin: 'Administrator',
+  donor: 'Living donor',
+  patient: 'Patient',
+};
+
+const Sidebar = ({ open, onClose }) => {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path) => location.pathname === path;
+  const role = roleOf(user);
+  const groups = NAV_BY_ROLE[role];
 
-  const getNavItems = () => {
-    if (user?.is_admin) return ADMIN_NAV;
-    if (user?.is_donor) return DONOR_NAV;
-    return PATIENT_NAV;
+  // Escape closes the drawer — expected behaviour for any overlay, and the
+  // only way out for keyboard users if the backdrop is not reachable.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
+  const isActive = (item) =>
+    item.exact
+      ? location.pathname === item.path
+      : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+
+  const go = (path) => {
+    navigate(path);
+    onClose();
   };
 
-  const navItems = getNavItems();
-
   return (
-    <div style={styles.sidebar}>
+    <>
+      {open && (
+        <button
+          type="button"
+          className={styles.backdrop}
+          onClick={onClose}
+          aria-label="Close navigation"
+        />
+      )}
 
-      {/* Premium Logo */}
-      <div style={styles.logoSection}>
-        <div style={styles.logo} onClick={() => navigate('/')}>
-          <span style={styles.logoEmoji}>🫀</span>
-          <span style={styles.logoText}>RaktaSeva</span>
-        </div>
-        <div style={styles.tagline}>Sri Lankan Transplant Hub</div>
-      </div>
+      <aside
+        className={[styles.sidebar, open && styles.open].filter(Boolean).join(' ')}
+        aria-label="Main navigation"
+      >
+        <button className={styles.brand} onClick={() => go('/kidney')}>
+          <span className={styles.brandMark}>
+            <Heart size={17} fill="currentColor" />
+          </span>
+          <span>
+            <span className={styles.brandName}>RaktaSeva</span>
+            <span className={styles.brandTag}>Donor network</span>
+          </span>
+        </button>
 
-      {/* Simplified User Account Card */}
-      <div style={styles.userCard}>
-        <div style={{
-          ...styles.avatar,
-          backgroundColor: user?.is_admin ? '#F39C12' : user?.is_donor ? '#8E44AD' : '#2980B9'
-        }}>
-          {user?.full_name?.charAt(0).toUpperCase()}
-        </div>
-        <div style={styles.userDetails}>
-          <div style={styles.userName}>{user?.full_name}</div>
-          <div style={{
-            ...styles.roleTag,
-            backgroundColor: user?.is_admin 
-              ? 'rgba(243,156,18,0.15)' 
-              : user?.is_donor 
-                ? 'rgba(142,68,173,0.15)' 
-                : 'rgba(41,128,185,0.15)',
-            color: user?.is_admin ? '#F39C12' : user?.is_donor ? '#A569BD' : '#3498DB',
-          }}>
-            {user?.is_admin ? '👑 Administrator' : user?.is_donor ? '❤️ Altruistic Donor' : '🏥 Kidney Patient'}
+        <nav className={styles.nav}>
+          {groups.map((group) => (
+            <div key={group.label} className={styles.group}>
+              <div className={styles.groupLabel}>{group.label}</div>
+
+              {group.items.map((item) => {
+                const active = isActive(item);
+                return (
+                  <button
+                    key={item.path}
+                    className={[styles.item, active && styles.itemActive]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => go(item.path)}
+                    // Tells assistive tech which item represents the current
+                    // page — colour alone does not convey that.
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <span className={styles.itemIcon}>{item.icon}</span>
+                    <span className={styles.itemLabel}>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        <div className={styles.footer}>
+          <button className={styles.user} onClick={() => go('/profile')}>
+            <span
+              className={[
+                styles.avatar,
+                styles[`avatar${role.charAt(0).toUpperCase()}${role.slice(1)}`],
+              ].join(' ')}
+            >
+              {user?.full_name?.charAt(0).toUpperCase() || '?'}
+            </span>
+            <span className={styles.userMeta}>
+              <span className={styles.userName}>{user?.full_name}</span>
+              <span className={styles.userRole}>{ROLE_LABEL[role]}</span>
+            </span>
+          </button>
+
+          <div className={styles.footerActions}>
+            <button
+              className={styles.footerButton}
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}
+            >
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+              {isDark ? 'Light' : 'Dark'}
+            </button>
+
+            <button
+              className={`${styles.footerButton} ${styles.logout}`}
+              onClick={logout}
+            >
+              <LogOut size={16} />
+              Log out
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Unified Simplified Navigation */}
-      <div style={styles.navContainer}>
-        <div style={styles.menuLabel}>Main Navigation</div>
-        {navItems.map((item, i) => {
-          const active = isActive(item.path);
-          return (
-            <div
-              key={i}
-              style={active ? styles.navItemActive : styles.navItem}
-              onClick={() => navigate(item.path)}
-            >
-              <div style={{ color: active ? '#8E44AD' : 'rgba(255,255,255,0.45)' }}>
-                {item.icon}
-              </div>
-              <span style={{ fontWeight: active ? '700' : '500' }}>{item.label}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Logout */}
-      <div style={styles.logoutBtn} onClick={logout}>
-        <LogOut size={16} />
-        <span>Logout Account</span>
-      </div>
-    </div>
+      </aside>
+    </>
   );
-};
-
-const styles = {
-  sidebar: {
-    width: '245px',
-    backgroundColor: '#111827', // Clean premium Slate Dark
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'fixed',
-    height: '100vh',
-    overflowY: 'auto',
-    borderRight: '1px solid rgba(255,255,255,0.05)',
-  },
-  logoSection: {
-    padding: '24px 20px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-  },
-  logo: {
-    display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer'
-  },
-  logoEmoji: { fontSize: '20px' },
-  logoText: {
-    color: 'white', fontFamily: 'Playfair Display, serif',
-    fontSize: '20px', fontWeight: '700',
-  },
-  tagline: {
-    color: '#8E44AD', fontSize: '11px', fontWeight: '600', paddingLeft: '28px', textTransform: 'uppercase', letterSpacing: '0.5px'
-  },
-  userCard: {
-    display: 'flex', alignItems: 'center', gap: '12px',
-    padding: '16px 20px',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    backgroundColor: 'rgba(255,255,255,0.01)',
-  },
-  avatar: {
-    width: '36px', height: '36px', borderRadius: '10px',
-    color: 'white', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', fontSize: '16px', fontWeight: '700', flexShrink: 0,
-  },
-  userDetails: { overflow: 'hidden', flex: 1 },
-  userName: {
-    color: 'white', fontSize: '13px', fontWeight: '600',
-    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-  },
-  roleTag: {
-    display: 'inline-block', fontSize: '10.5px', fontWeight: '600',
-    padding: '2px 8px', borderRadius: '20px', marginTop: '4px',
-  },
-  navContainer: {
-    flex: 1, padding: '16px 12px',
-    display: 'flex', flexDirection: 'column', gap: '4px'
-  },
-  menuLabel: {
-    fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px', paddingLeft: '12px'
-  },
-  navItem: {
-    display: 'flex', alignItems: 'center', gap: '12px',
-    padding: '11px 12px', borderRadius: '10px',
-    color: 'rgba(255,255,255,0.65)', cursor: 'pointer',
-    fontSize: '13.5px', transition: 'all 0.15s ease',
-  },
-  navItemActive: {
-    display: 'flex', alignItems: 'center', gap: '12px',
-    padding: '11px 12px', borderRadius: '10px',
-    backgroundColor: 'rgba(142,68,173,0.12)',
-    color: '#A569BD', cursor: 'pointer',
-    fontSize: '13.5px', transition: 'all 0.15s ease',
-    borderLeft: '4px solid #8E44AD'
-  },
-  logoutBtn: {
-    display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '18px 24px',
-    borderTop: '1px solid rgba(255,255,255,0.05)',
-    color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '13px',
-    transition: 'color 0.2s',
-  },
 };
 
 export default Sidebar;

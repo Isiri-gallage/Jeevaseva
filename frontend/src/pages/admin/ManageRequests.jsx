@@ -1,171 +1,160 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { adminAPI } from '../../services/api';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import Layout from '../../components/layout/Layout';
+import { Building2, Clock, Droplets, MapPin, Phone, Search, Trash2 } from 'lucide-react';
+import { adminAPI } from '../../services/api';
+import Layout, { PageHeader } from '../../components/layout/Layout';
+import { Badge, Button, Card, EmptyState, Input, Spinner, Tabs } from '../../components/ui';
 import {
-  Search, Trash2, ArrowLeft,
-  MapPin, Phone, Building2, Clock, Droplets
-} from 'lucide-react';
-import { URGENCY_COLORS, URGENCY_LABELS, getTimeAgo } from '../../utils/helpers';
-import Spinner from '../../components/ui/Spinner';
+  getTimeAgo, REQUEST_STATUS_LABELS, REQUEST_STATUS_VARIANTS,
+  URGENCY_LABELS, URGENCY_VARIANTS,
+} from '../../utils/helpers';
+import { getErrorMessage } from '../../utils/apiError';
+import cards from '../../styles/Cards.module.css';
+import table from '../../styles/Table.module.css';
+
+const FILTERS = ['all', 'open', 'fulfilled', 'expired', 'cancelled'];
 
 const ManageRequests = () => {
-  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [status, setStatus] = useState('all');
+  const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     adminAPI.getAllRequests()
-      .then(res => { setRequests(res.data); setFiltered(res.data); })
-      .catch(() => toast.error('Failed to load requests'))
+      .then((res) => setRequests(res.data))
+      .catch((error) => toast.error(getErrorMessage(error, 'Could not load requests')))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    let result = requests;
-    if (filterStatus !== 'all') result = result.filter(r => r.status === filterStatus);
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(r =>
-        r.patient_name.toLowerCase().includes(q) ||
-        r.hospital_name.toLowerCase().includes(q) ||
-        r.city.toLowerCase().includes(q) ||
-        r.blood_type.toLowerCase().includes(q)
-      );
+  const handleDelete = async (id, patientName) => {
+    if (!window.confirm(`Permanently delete the request for ${patientName}? This cannot be undone.`)) {
+      return;
     }
-    setFiltered(result);
-  }, [search, filterStatus, requests]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this request?')) return;
+    setBusyId(id);
     try {
       await adminAPI.deleteRequest(id);
-      toast.success('Request deleted!');
-      setRequests(requests.filter(r => r.id !== id));
-    } catch { toast.error('Failed to delete request'); }
+      toast.success('Request deleted.');
+      setRequests((previous) => previous.filter((request) => request.id !== id));
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not delete the request'));
+    } finally {
+      setBusyId(null);
+    }
   };
+
+  const counts = useMemo(() => {
+    const byStatus = requests.reduce((accumulator, request) => {
+      accumulator[request.status] = (accumulator[request.status] || 0) + 1;
+      return accumulator;
+    }, {});
+    return { all: requests.length, ...byStatus };
+  }, [requests]);
+
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return requests.filter((request) => {
+      if (status !== 'all' && request.status !== status) return false;
+      if (!needle) return true;
+      return ['patient_name', 'hospital_name', 'city', 'blood_type']
+        .some((field) => String(request[field] ?? '').toLowerCase().includes(needle));
+    });
+  }, [requests, search, status]);
+
+  const tabs = FILTERS.map((id) => ({
+    id,
+    label: id === 'all' ? 'All' : REQUEST_STATUS_LABELS[id],
+    count: counts[id] || 0,
+  }));
 
   return (
     <Layout>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.backBtn} onClick={() => navigate('/admin')}>
-            <ArrowLeft size={18} />
-          </div>
-          <div>
-            <h1 style={styles.headerTitle}>Manage Requests</h1>
-            <p style={styles.headerSubtitle}>{filtered.length} requests found</p>
-          </div>
-        </div>
-        <div style={styles.headerRight}>
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            style={styles.filterSelect}
-          >
-            <option value="all">All Status</option>
-            <option value="open">Open</option>
-            <option value="fulfilled">Fulfilled</option>
-            <option value="expired">Expired</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <div style={styles.searchBox}>
-            <Search size={16} color="#7F8C8D" />
-            <input
-              type="text"
-              placeholder="Search requests..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={styles.searchInput}
-            />
-          </div>
+      <PageHeader
+        title="Manage blood requests"
+        subtitle={loading ? undefined : `${requests.length} request${requests.length === 1 ? '' : 's'} on the platform`}
+      />
+
+      <div className={table.toolbar}>
+        <div className={table.search}>
+          <Input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by patient, hospital, city or blood type"
+            icon={<Search size={16} />}
+            aria-label="Search requests"
+          />
         </div>
       </div>
 
+      <Tabs tabs={tabs} value={status} onChange={setStatus} />
+
       {loading ? (
-         <Spinner />
-      ) : filtered.length === 0 ? (
-        <div style={styles.empty}>
-          <Droplets size={48} color="#E8E8E8" />
-          <h3 style={styles.emptyTitle}>No requests found</h3>
-          <p style={styles.emptyText}>Try adjusting your search or filter</p>
-        </div>
+        <Spinner fullPage label="Loading requests" />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon={<Droplets size={24} />}
+          title={search || status !== 'all' ? 'No requests match these filters' : 'No requests yet'}
+          description={search || status !== 'all' ? 'Try clearing the search or choosing a different status.' : undefined}
+        />
       ) : (
-        <div style={styles.grid}>
-          {filtered.map(request => (
-            <div key={request.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div style={styles.bloodBadge}>{request.blood_type}</div>
-                <div style={{ ...styles.urgencyBadge, backgroundColor: URGENCY_COLORS[request.urgency] + '20', color: URGENCY_COLORS[request.urgency] }}>
-                  {URGENCY_LABELS[request.urgency]}
-                </div>
-                <div style={{
-                  ...styles.statusBadge,
-                  backgroundColor: request.status === 'open' ? '#EAFAF1' : '#F2F3F4',
-                  color: request.status === 'open' ? '#27AE60' : '#7F8C8D',
-                }}>
-                  {request.status}
-                </div>
+        <div className={cards.grid}>
+          {visible.map((request) => (
+            <Card key={request.id} padding="lg">
+              <div className={cards.tags}>
+                <span className={cards.bloodType}>{request.blood_type}</span>
+                <Badge variant={REQUEST_STATUS_VARIANTS[request.status] || 'neutral'}>
+                  {REQUEST_STATUS_LABELS[request.status] || request.status}
+                </Badge>
+                <Badge variant={URGENCY_VARIANTS[request.urgency] || 'neutral'} dot>
+                  {URGENCY_LABELS[request.urgency] || request.urgency}
+                </Badge>
               </div>
-              <h3 style={styles.patientName}>{request.patient_name}</h3>
-              <p style={styles.units}>
-                <Droplets size={14} color="#C0392B" />
-                {request.units_needed} unit(s) needed
+
+              <h3 className={cards.name}>{request.patient_name}</h3>
+              <p className={cards.meta}>
+                {request.units_needed} unit{request.units_needed === 1 ? '' : 's'} needed
               </p>
-              <div style={styles.details}>
-                <div style={styles.detailRow}><Building2 size={14} color="#7F8C8D" /><span>{request.hospital_name}</span></div>
-                <div style={styles.detailRow}><MapPin size={14} color="#7F8C8D" /><span>{request.city}</span></div>
-                <div style={styles.detailRow}><Phone size={14} color="#7F8C8D" /><span>{request.contact_number}</span></div>
-                <div style={styles.detailRow}><Clock size={14} color="#7F8C8D" /><span>{getTimeAgo(request.created_at)}</span></div>
+
+              <div className={cards.details}>
+                <span className={cards.detail}>
+                  <Building2 size={15} />
+                  <span className={cards.detailValue}>{request.hospital_name}</span>
+                </span>
+                <span className={cards.detail}>
+                  <MapPin size={15} />
+                  <span className={cards.detailValue}>{request.city}</span>
+                </span>
+                <span className={cards.detail}>
+                  <Phone size={15} />
+                  <span className={cards.detailValue}>{request.contact_number}</span>
+                </span>
+                <span className={cards.detail}>
+                  <Clock size={15} />
+                  <span className={cards.detailValue}>Posted {getTimeAgo(request.created_at)}</span>
+                </span>
               </div>
-              {request.notes && <p style={styles.notes}>"{request.notes}"</p>}
-              <div style={styles.cardFooter}>
-                <span style={styles.requestId}>ID: #{request.id}</span>
-                <button style={styles.deleteBtn} onClick={() => handleDelete(request.id)}>
-                  <Trash2 size={14} /> Delete
-                </button>
+
+              {request.notes && <p className={cards.quote}>{request.notes}</p>}
+
+              <div className={cards.actions}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(request.id, request.patient_name)}
+                  disabled={busyId === request.id}
+                >
+                  <Trash2 size={15} /> Delete request
+                </Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
     </Layout>
   );
-};
-
-const styles = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
-  backBtn: { width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', color: '#2C3E50' },
-  headerTitle: { fontSize: '28px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  headerSubtitle: { color: '#7F8C8D', fontSize: '14px', marginTop: '2px' },
-  headerRight: { display: 'flex', gap: '12px', alignItems: 'center' },
-  filterSelect: { padding: '10px 16px', borderRadius: '10px', border: '2px solid #E8E8E8', backgroundColor: 'white', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', color: '#2C3E50', cursor: 'pointer' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'white', borderRadius: '10px', padding: '10px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', width: '260px' },
-  searchInput: { border: 'none', outline: 'none', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', width: '100%', color: '#2C3E50' },
-  loading: { textAlign: 'center', padding: '60px', color: '#7F8C8D' },
-  empty: { textAlign: 'center', padding: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
-  emptyTitle: { fontSize: '20px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  emptyText: { color: '#7F8C8D', fontSize: '14px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
-  card: { backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  cardHeader: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' },
-  bloodBadge: { backgroundColor: '#FADBD8', color: '#C0392B', padding: '4px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: '700' },
-  urgencyBadge: { padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500' },
-  statusBadge: { padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500', textTransform: 'capitalize' },
-  patientName: { fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#2C3E50', marginBottom: '6px' },
-  units: { display: 'flex', alignItems: 'center', gap: '6px', color: '#C0392B', fontSize: '14px', fontWeight: '500', marginBottom: '16px' },
-  details: { display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' },
-  detailRow: { display: 'flex', alignItems: 'center', gap: '8px', color: '#7F8C8D', fontSize: '13px' },
-  notes: { color: '#7F8C8D', fontSize: '13px', fontStyle: 'italic', marginBottom: '12px', padding: '10px', backgroundColor: '#F2F3F4', borderRadius: '8px' },
-  cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #F2F3F4' },
-  requestId: { color: '#95A5A6', fontSize: '13px' },
-  deleteBtn: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', backgroundColor: '#FADBD8', color: '#C0392B', fontSize: '13px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
 };
 
 export default ManageRequests;

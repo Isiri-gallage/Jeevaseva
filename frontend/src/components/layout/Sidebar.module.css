@@ -1,0 +1,287 @@
+/* ─── Rail ─────────────────────────────────────────────────*/
+
+.sidebar {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-drawer);
+
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-width);
+
+  background-color: var(--color-surface);
+  border-inline-end: 1px solid var(--color-border);
+
+  /* Below 1024px the rail becomes an off-canvas drawer. It stays mounted and
+   * slides out of view so the open/close animation has something to animate,
+   * and so focus/scroll state survives being closed. */
+  transform: translateX(-100%);
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.open {
+  transform: translateX(0);
+  box-shadow: var(--shadow-xl);
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* ─── Backdrop ─────────────────────────────────────────────*/
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-drawer) - 1);
+  background-color: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  animation: fade var(--duration-base) var(--ease-out);
+  border: none;
+}
+
+@media (min-width: 1024px) {
+  .backdrop { display: none; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Brand ────────────────────────────────────────────────*/
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-5) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: #fff;
+}
+
+/* display:block on both — a <span> is inline, so without this the name and the
+ * tagline render side by side as "RaktaSevaDonor network". */
+.brandName {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.brandTag {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ─── Navigation ───────────────────────────────────────────*/
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-3);
+}
+
+.group + .group {
+  margin-top: var(--space-6);
+}
+
+.groupLabel {
+  padding-inline: var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  text-align: start;
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.item + .item {
+  margin-top: 2px;
+}
+
+.item:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.itemActive {
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * The active marker is a pseudo-element, not a border.
+ *
+ * The previous implementation used `border-left: 4px solid`, which added 4px to
+ * the box and shoved the label sideways every time the route changed. An
+ * absolutely positioned bar occupies no layout space, so nothing shifts.
+ */
+.itemActive::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 3px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-accent);
+}
+
+.itemIcon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.itemLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Count pill pushed to the far end of the row. */
+.itemBadge {
+  margin-inline-start: auto;
+}
+
+/* ─── Footer ───────────────────────────────────────────────*/
+
+.footer {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  text-align: start;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.user:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.avatarAdmin  { background-color: var(--color-warning); }
+.avatarDonor  { background-color: var(--color-accent); }
+.avatarPatient { background-color: #0071E3; }
+
+.userMeta {
+  display: block;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Also block: text-overflow:ellipsis has no effect on an inline element,
+ * so a long name would have overflowed rather than truncated. */
+.userName {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userRole {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.footerActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.footerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: 1;
+
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.footerButton:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.logout:hover {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}

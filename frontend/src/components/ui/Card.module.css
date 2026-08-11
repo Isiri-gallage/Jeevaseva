@@ -1,0 +1,91 @@
+/*
+ * Card — the elevated surface everything else sits on.
+ */
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+
+  transition:
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+/* ─── Padding ──────────────────────────────────────────────*/
+.padNone { padding: 0; }
+.padSm   { padding: var(--space-4); }
+.padMd   { padding: var(--space-6); }
+.padLg   { padding: var(--space-8); }
+
+/* ─── Interactive ──────────────────────────────────────────
+ * Only for cards that are actually clickable. A hover effect on a static card
+ * is a lie — it promises an interaction that does not exist. */
+.interactive {
+  cursor: pointer;
+}
+
+.interactive:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-border-strong);
+  /* One pixel. Enough to register as "lifting", small enough that a grid of
+   * cards does not visibly jitter as the pointer crosses it. */
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── Variants ─────────────────────────────────────────────*/
+
+/* Flat card for use inside an already-elevated surface, where a second shadow
+ * would muddy the depth hierarchy. */
+.flat {
+  box-shadow: none;
+  background-color: var(--color-surface-sunken);
+}
+
+/* Tinted card that picks up the accent, for highlighting a primary action. */
+.accent {
+  background-color: var(--color-accent-soft);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ─── Slots ────────────────────────────────────────────────*/
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  margin-top: var(--space-1);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}

@@ -1,12 +1,25 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { authAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import { ArrowLeft, ArrowRight, Heart, Lock, Mail, MapPin, Phone, User } from 'lucide-react';
+import { authAPI } from '../../services/api';
+import { Button, Input, Select } from '../../components/ui';
 import { BLOOD_TYPES } from '../../utils/helpers';
+import { getErrorMessage, getFieldErrors } from '../../utils/apiError';
+import styles from './Auth.module.css';
+
+const STEPS = [
+  'Create your account',
+  'Add your blood type and city',
+  'Post a request or offer to donate',
+  'Connect and coordinate privately',
+];
 
 const Register = () => {
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -17,291 +30,199 @@ const Register = () => {
     city: '',
   });
 
-  const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setForm({ ...form, [e.target.name]: value });
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setForm((previous) => ({ ...previous, [name]: type === 'checkbox' ? checked : value }));
+    setErrors((previous) => (previous[name] ? { ...previous, [name]: undefined } : previous));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setErrors({});
+
     try {
-      await authAPI.register(form);
-      toast.success('Account created successfully! Please login 🩸');
+      // city is optional server-side; send undefined rather than "" so the
+      // backend stores NULL instead of an empty string.
+      await authAPI.register({ ...form, city: form.city.trim() || undefined });
+      toast.success('Account created. Please sign in.');
       navigate('/login');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Registration failed!');
+    } catch (error) {
+      const fieldErrors = getFieldErrors(error);
+      setErrors(fieldErrors);
+      toast.error(getErrorMessage(error, 'Registration failed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      {/* Left Side */}
-      <div style={styles.left}>
-        <div style={styles.leftContent}>
-          <div style={styles.logo}>🩸 RaktaSeva</div>
-          <h1 style={styles.leftTitle}>Join the <br />Movement</h1>
-          <p style={styles.leftSubtitle}>
-            Every donor is a hero. Register today and be ready to save a life when it matters most.
-          </p>
-          <div style={styles.steps}>
-            {[
-              'Create your account',
-              'Set your blood type',
-              'Register as donor',
-              'Start saving lives',
-            ].map((step, i) => (
-              <div key={i} style={styles.step}>
-                <div style={styles.stepNumber}>{i + 1}</div>
-                <span style={styles.stepText}>{step}</span>
+    <div className={styles.page}>
+
+      {/* ─── Brand panel ────────────────────────────────── */}
+      <aside className={styles.aside}>
+        <Link to="/" className={styles.asideBrand}>
+          <span className={styles.asideMark}>
+            <Heart size={17} fill="currentColor" />
+          </span>
+          RaktaSeva
+        </Link>
+
+        <div className={styles.asideBody}>
+          <h1 className={styles.asideTitle}>Four steps to your first connection.</h1>
+
+          <div className={styles.steps}>
+            {STEPS.map((step, index) => (
+              <div key={step} className={styles.step}>
+                <span className={styles.stepNumber}>{index + 1}</span>
+                {step}
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Right Side */}
-      <div style={styles.right}>
-        <div style={styles.formContainer}>
-          <h2 style={styles.title}>Create Account</h2>
-          <p style={styles.subtitle}>Join RaktaSeva and save lives</p>
+        <p className={styles.asideFoot}>
+          Registering does not commit you to anything. You choose whether to
+          respond to a request, and you can withdraw at any point.
+        </p>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            {/* Full Name */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Full Name</label>
-              <input
-                type="text"
-                name="full_name"
-                value={form.full_name}
+        <span className={styles.asideGlyph} aria-hidden="true">🫀</span>
+      </aside>
+
+      {/* ─── Form ───────────────────────────────────────── */}
+      <div className={styles.formSide}>
+        <div className={styles.formWrap}>
+          <Link to="/" className={styles.mobileBrand}>
+            <span className={styles.mobileMark}>
+              <Heart size={15} fill="currentColor" />
+            </span>
+            RaktaSeva
+          </Link>
+
+          <h2 className={styles.title}>Create your account</h2>
+          <p className={styles.subtitle}>Free, and takes about a minute.</p>
+
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            <Input
+              label="Full name"
+              name="full_name"
+              value={form.full_name}
+              onChange={handleChange}
+              error={errors.full_name}
+              placeholder="Nimal Perera"
+              icon={<User size={16} />}
+              autoComplete="name"
+              autoFocus
+              required
+            />
+
+            <Input
+              label="Email address"
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              error={errors.email}
+              placeholder="you@example.com"
+              icon={<Mail size={16} />}
+              autoComplete="email"
+              required
+            />
+
+            <Input
+              label="Phone number"
+              type="tel"
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              error={errors.phone}
+              hint="10 digits, e.g. 0771234567"
+              placeholder="0771234567"
+              icon={<Phone size={16} />}
+              autoComplete="tel"
+              required
+            />
+
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              error={errors.password}
+              hint="At least 8 characters, including a letter and a number"
+              placeholder="••••••••"
+              icon={<Lock size={16} />}
+              autoComplete="new-password"
+              required
+            />
+
+            <div className={styles.row}>
+              <Select
+                label="Blood type"
+                name="blood_type"
+                value={form.blood_type}
                 onChange={handleChange}
-                placeholder="Your full name"
-                style={styles.input}
+                error={errors.blood_type}
+                options={BLOOD_TYPES}
+                placeholder="Select"
                 required
+              />
+
+              <Input
+                label="City"
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+                error={errors.city}
+                placeholder="Colombo"
+                icon={<MapPin size={16} />}
+                autoComplete="address-level2"
               />
             </div>
 
-            {/* Email */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="your@email.com"
-                style={styles.input}
-                required
-              />
-            </div>
-
-            {/* Phone */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Phone Number</label>
-              <input
-                type="text"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="07XXXXXXXX"
-                style={styles.input}
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Password</label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                style={styles.input}
-                required
-              />
-            </div>
-
-            {/* Blood Type + City Row */}
-            <div style={styles.row}>
-              <div style={{ ...styles.inputGroup, flex: 1 }}>
-                <label style={styles.label}>Blood Type</label>
-                <select
-                  name="blood_type"
-                  value={form.blood_type}
-                  onChange={handleChange}
-                  style={styles.input}
-                  required
-                >
-                  <option value="">Select</option>
-                  {BLOOD_TYPES.map(bt => (
-                    <option key={bt} value={bt}>{bt}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ ...styles.inputGroup, flex: 1 }}>
-                <label style={styles.label}>City</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  placeholder="Colombo"
-                  style={styles.input}
-                />
-              </div>
-            </div>
-
-            {/* Donor Checkbox */}
-            <div style={styles.checkboxGroup}>
+            {/* The whole card is the label, so tapping anywhere in it toggles
+              * the checkbox — a much larger target than the 18px box alone. */}
+            <label
+              className={[styles.checkboxCard, form.is_donor && styles.checkboxCardChecked]
+                .filter(Boolean)
+                .join(' ')}
+            >
               <input
                 type="checkbox"
                 name="is_donor"
-                id="is_donor"
                 checked={form.is_donor}
                 onChange={handleChange}
-                style={styles.checkbox}
+                className={styles.checkbox}
               />
-              <label htmlFor="is_donor" style={styles.checkboxLabel}>
-                ❤️ Register me as a blood donor
-              </label>
-            </div>
+              <span>
+                <span className={styles.checkboxLabel}>
+                  I am willing to donate
+                </span>
+                <span className={styles.checkboxHint}>
+                  Shows you compatible requests and lets patients find you. You
+                  are never obliged to respond, and you can turn this off later.
+                </span>
+              </span>
+            </label>
 
-            <button
-              type="submit"
-              style={loading ? styles.btnDisabled : styles.btn}
-              disabled={loading}
-            >
-              {loading ? 'Creating Account...' : 'Create Account →'}
-            </button>
+            <Button type="submit" size="lg" loading={loading} fullWidth>
+              Create account <ArrowRight size={17} />
+            </Button>
           </form>
 
-          <p style={styles.switchText}>
-            Already have an account?{' '}
-            <Link to="/login" style={styles.link}>Login here</Link>
+          <p className={styles.switch}>
+            Already registered?{' '}
+            <Link to="/login" className={styles.link}>Sign in</Link>
           </p>
 
-          <Link to="/" style={styles.backLink}>← Back to Home</Link>
+          <Link to="/" className={styles.backHome}>
+            <ArrowLeft size={15} /> Back to home
+          </Link>
         </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: { display: 'flex', minHeight: '100vh' },
-  left: {
-    flex: 1,
-    background: 'linear-gradient(135deg, #922B21 0%, #C0392B 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '60px',
-  },
-  leftContent: { color: 'white', maxWidth: '400px' },
-  logo: {
-    fontSize: '22px',
-    fontFamily: 'Playfair Display, serif',
-    marginBottom: '40px',
-    opacity: 0.9,
-  },
-  leftTitle: {
-    fontSize: '52px',
-    fontFamily: 'Playfair Display, serif',
-    fontWeight: '900',
-    lineHeight: '1.1',
-    marginBottom: '20px',
-  },
-  leftSubtitle: {
-    fontSize: '16px',
-    opacity: 0.85,
-    lineHeight: '1.7',
-    marginBottom: '40px',
-  },
-  steps: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  step: { display: 'flex', alignItems: 'center', gap: '16px' },
-  stepNumber: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '14px',
-    fontWeight: '600',
-    flexShrink: 0,
-  },
-  stepText: { fontSize: '15px', opacity: 0.9 },
-  right: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px 60px',
-    backgroundColor: '#FDFEFE',
-    overflowY: 'auto',
-  },
-  formContainer: { width: '100%', maxWidth: '420px' },
-  title: {
-    fontSize: '36px',
-    fontFamily: 'Playfair Display, serif',
-    color: '#2C3E50',
-    marginBottom: '8px',
-  },
-  subtitle: { color: '#7F8C8D', marginBottom: '32px', fontSize: '15px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '18px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  label: { fontSize: '14px', fontWeight: '500', color: '#2C3E50' },
-  input: {
-    padding: '13px 16px',
-    borderRadius: '10px',
-    border: '2px solid #E8E8E8',
-    fontSize: '15px',
-    fontFamily: 'DM Sans, sans-serif',
-    backgroundColor: '#F2F3F4',
-    width: '100%',
-  },
-  row: { display: 'flex', gap: '16px' },
-  checkboxGroup: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '16px',
-    backgroundColor: '#FADBD8',
-    borderRadius: '10px',
-  },
-  checkbox: { width: '18px', height: '18px', cursor: 'pointer' },
-  checkboxLabel: { fontSize: '15px', color: '#C0392B', fontWeight: '500', cursor: 'pointer' },
-  btn: {
-    padding: '16px',
-    backgroundColor: '#C0392B',
-    color: 'white',
-    borderRadius: '10px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    fontFamily: 'DM Sans, sans-serif',
-    marginTop: '8px',
-    boxShadow: '0 4px 16px rgba(192,57,43,0.3)',
-  },
-  btnDisabled: {
-    padding: '16px',
-    backgroundColor: '#E74C3C80',
-    color: 'white',
-    borderRadius: '10px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'not-allowed',
-    fontFamily: 'DM Sans, sans-serif',
-    marginTop: '8px',
-  },
-  switchText: { textAlign: 'center', marginTop: '24px', color: '#7F8C8D', fontSize: '15px' },
-  link: { color: '#C0392B', fontWeight: '600' },
-  backLink: { display: 'block', textAlign: 'center', marginTop: '16px', color: '#95A5A6', fontSize: '14px' },
 };
 
 export default Register;

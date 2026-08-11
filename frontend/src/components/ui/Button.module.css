@@ -1,0 +1,180 @@
+/*
+ * Button.
+ *
+ * CSS Modules scopes every class name at build time (.button becomes something
+ * like .Button_button__x7f2a), so these names can never collide with another
+ * component's. That is what makes short, readable class names safe here.
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  /* 44px is Apple's minimum comfortable tap target. Anything smaller is a
+   * frustrating hit area on a phone. */
+  min-height: 44px;
+  padding: 0 var(--space-5);
+
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-tight);
+  white-space: nowrap;
+
+  cursor: pointer;
+  user-select: none;
+
+  /* Transitioning specific properties, not `all`. `transition: all` also
+   * animates layout properties, which forces reflows and drops frames. */
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+/* The press feedback. This single line does more for perceived quality than
+ * any amount of colour work — it makes the control feel physical. */
+.button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Variants ─────────────────────────────────────────────*/
+
+.primary {
+  background-color: var(--color-accent);
+  color: var(--color-text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+  box-shadow: var(--shadow-accent);
+}
+
+.primary:active:not(:disabled) {
+  background-color: var(--color-accent-active);
+}
+
+.secondary {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-text-tertiary);
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--color-accent);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--color-accent-soft);
+}
+
+.danger {
+  background-color: var(--color-danger);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.danger:hover:not(:disabled) {
+  background-color: var(--color-blood-hover);
+}
+
+/* Used only in the blood-donation flow, so the two products stay visually
+ * distinguishable without inventing a whole second theme. */
+.blood {
+  background-color: var(--color-blood);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.blood:hover:not(:disabled) {
+  background-color: var(--color-blood-hover);
+}
+
+/* ─── Sizes ────────────────────────────────────────────────*/
+
+.sm {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
+  gap: var(--space-1);
+}
+
+.lg {
+  min-height: 52px;
+  padding: 0 var(--space-8);
+  font-size: var(--text-md);
+  border-radius: var(--radius-lg);
+}
+
+/* ─── Modifiers ────────────────────────────────────────────*/
+
+.fullWidth {
+  width: 100%;
+}
+
+.pill {
+  border-radius: var(--radius-pill);
+}
+
+/* Square icon-only button — keeps the tap target without the text padding. */
+.iconOnly {
+  padding: 0;
+  width: 44px;
+}
+
+.iconOnly.sm { width: 32px; }
+.iconOnly.lg { width: 52px; }
+
+/* ─── Loading ──────────────────────────────────────────────
+ * The label stays in the DOM at zero opacity rather than being removed, so the
+ * button keeps its width and the layout does not jump mid-submit. */
+.loading {
+  cursor: wait;
+  position: relative;
+}
+
+.loading .label {
+  opacity: 0;
+}
+
+.spinner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 640ms linear infinite;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

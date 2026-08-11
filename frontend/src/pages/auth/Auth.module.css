@@ -1,0 +1,277 @@
+/* Shared by Login and Register. */
+
+.page {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+}
+
+@media (min-width: 940px) {
+  .page {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+}
+
+/* ─── Brand panel ──────────────────────────────────────────*/
+
+.aside {
+  position: relative;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-12);
+  overflow: hidden;
+
+  background:
+    radial-gradient(80% 60% at 20% 10%, rgba(255, 255, 255, 0.16) 0%, transparent 60%),
+    linear-gradient(150deg, var(--color-accent) 0%, #3F3DAF 55%, #2A2870 100%);
+  color: #fff;
+}
+
+/* Hidden on small screens rather than stacked: on a phone it would push the
+ * form below the fold, and the form is the only thing anyone came here for. */
+@media (min-width: 940px) {
+  .aside { display: flex; }
+}
+
+.asideBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tighter);
+  color: #fff;
+}
+
+.asideMark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.asideBody {
+  position: relative;
+  z-index: 1;
+  max-width: 30rem;
+}
+
+.asideTitle {
+  font-size: clamp(1.75rem, 2.6vw, var(--text-2xl));
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tighter);
+  line-height: var(--leading-tight);
+  color: #fff;
+  margin-bottom: var(--space-5);
+  text-wrap: balance;
+}
+
+.asideText {
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  letter-spacing: var(--tracking-normal);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: var(--tracking-normal);
+}
+
+.stepNumber {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: #fff;
+}
+
+.asideFoot {
+  position: relative;
+  z-index: 1;
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: var(--tracking-normal);
+  max-width: 34rem;
+}
+
+/* Decorative glyph bleeding off the panel edge. aria-hidden in the markup. */
+.asideGlyph {
+  position: absolute;
+  right: -3rem;
+  bottom: -3rem;
+  font-size: 18rem;
+  line-height: 1;
+  opacity: 0.12;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ─── Form side ────────────────────────────────────────────*/
+
+.formSide {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-8) var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .formSide { padding: var(--space-12); }
+}
+
+.formWrap {
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+}
+
+/* Compact brand lockup shown only where the side panel is hidden. */
+.mobileBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tighter);
+}
+
+@media (min-width: 940px) {
+  .mobileBrand { display: none; }
+}
+
+.mobileMark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-accent);
+  color: #fff;
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tighter);
+  margin-bottom: var(--space-2);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  margin-bottom: var(--space-8);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 480px) {
+  .row { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── Donor opt-in ─────────────────────────────────────────*/
+
+.checkboxCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.checkboxCard:hover {
+  border-color: var(--color-accent);
+}
+
+.checkboxCardChecked {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--color-accent);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.checkboxLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.checkboxHint {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-normal);
+}
+
+/* ─── Footer ───────────────────────────────────────────────*/
+
+.switch {
+  margin-top: var(--space-8);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.link {
+  font-weight: var(--weight-medium);
+}
+
+.backHome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+.backHome:hover {
+  color: var(--color-text-secondary);
+}

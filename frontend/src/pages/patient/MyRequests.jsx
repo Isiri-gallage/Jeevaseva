@@ -1,184 +1,200 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { requestsAPI, donorsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-import Layout from '../../components/layout/Layout';
 import {
-  Droplets, Plus, Clock, MapPin,
-  Building2, CheckCircle, Trash2, MessageCircle
+  Building2, CheckCircle, Clock, Droplets, MapPin, MessageCircle, Plus, Trash2,
 } from 'lucide-react';
-import { URGENCY_COLORS, URGENCY_LABELS, getTimeAgo } from '../../utils/helpers';
-import Spinner from '../../components/ui/Spinner';
+import { requestsAPI, donorsAPI } from '../../services/api';
+import Layout, { PageHeader } from '../../components/layout/Layout';
+import { Badge, Button, Card, EmptyState, Spinner, Tabs } from '../../components/ui';
+import {
+  getTimeAgo, REQUEST_STATUS_LABELS, REQUEST_STATUS_VARIANTS,
+  URGENCY_LABELS, URGENCY_VARIANTS,
+} from '../../utils/helpers';
+import { getErrorMessage } from '../../utils/apiError';
+import cards from '../../styles/Cards.module.css';
 
-const STATUS_CONFIG = {
-  open: { color: '#27AE60', bg: '#EAFAF1', label: 'Open' },
-  fulfilled: { color: '#2980B9', bg: '#EBF5FB', label: 'Fulfilled' },
-  expired: { color: '#95A5A6', bg: '#F2F3F4', label: 'Expired' },
-  cancelled: { color: '#C0392B', bg: '#FADBD8', label: 'Cancelled' },
-};
+const FILTERS = ['all', 'open', 'fulfilled', 'expired', 'cancelled'];
 
 const MyRequests = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     requestsAPI.getMyRequests()
-      .then(res => setRequests(res.data))
-      .catch(() => toast.error('Failed to load requests'))
+      .then((res) => setRequests(res.data))
+      .catch((error) => toast.error(getErrorMessage(error, 'Could not load your requests')))
       .finally(() => setLoading(false));
   }, []);
 
   const handleMarkFulfilled = async (id) => {
+    setBusyId(id);
     try {
       await requestsAPI.update(id, { status: 'fulfilled' });
-      toast.success('Request marked as fulfilled!');
-      setRequests(requests.map(r => r.id === id ? { ...r, status: 'fulfilled' } : r));
-    } catch {
-      toast.error('Failed to update request');
+      toast.success('Marked as fulfilled.');
+      setRequests((previous) =>
+        previous.map((request) => (request.id === id ? { ...request, status: 'fulfilled' } : request))
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not update the request'));
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this request?')) return;
+    if (!window.confirm('Delete this request permanently?')) return;
+
+    setBusyId(id);
     try {
       await requestsAPI.delete(id);
-      toast.success('Request deleted!');
-      setRequests(requests.filter(r => r.id !== id));
-    } catch {
-      toast.error('Failed to delete request');
+      toast.success('Request deleted.');
+      setRequests((previous) => previous.filter((request) => request.id !== id));
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not delete the request'));
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleChat = async (requestId) => {
     try {
-      const res = await donorsAPI.getDonationByRequest(requestId);
-      navigate(`/chat/${res.data.id}`);
+      const { data } = await donorsAPI.getDonationByRequest(requestId);
+      navigate(`/chat/${data.id}`);
     } catch {
-      toast.error('No donor has responded to this request yet!');
+      toast('No donor has responded to this request yet.');
     }
   };
 
-  const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter);
+  // Counts come from the unfiltered list so the tabs do not all read zero once
+  // a filter is applied.
+  const counts = useMemo(() => {
+    const byStatus = requests.reduce((accumulator, request) => {
+      accumulator[request.status] = (accumulator[request.status] || 0) + 1;
+      return accumulator;
+    }, {});
+    return { all: requests.length, ...byStatus };
+  }, [requests]);
+
+  const visible = useMemo(
+    () => (filter === 'all' ? requests : requests.filter((request) => request.status === filter)),
+    [requests, filter]
+  );
+
+  const tabs = FILTERS.map((id) => ({
+    id,
+    label: id === 'all' ? 'All' : REQUEST_STATUS_LABELS[id],
+    count: counts[id] || 0,
+  }));
 
   return (
     <Layout>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.headerTitle}>My Requests</h1>
-          <p style={styles.headerSubtitle}>{requests.length} total requests</p>
-        </div>
-        <button style={styles.createBtn} onClick={() => navigate('/create-request')}>
-          <Plus size={18} /> New Request
-        </button>
-      </div>
+      <PageHeader
+        title="My blood requests"
+        subtitle={loading ? undefined : `${requests.length} request${requests.length === 1 ? '' : 's'} posted`}
+        actions={
+          <Button onClick={() => navigate('/create-request')}>
+            <Plus size={16} /> New request
+          </Button>
+        }
+      />
 
-      {/* Filter Tabs */}
-      <div style={styles.filterTabs}>
-        {['all', 'open', 'fulfilled', 'expired', 'cancelled'].map(tab => (
-          <button
-            key={tab}
-            style={filter === tab ? styles.filterTabActive : styles.filterTab}
-            onClick={() => setFilter(tab)}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={tabs} value={filter} onChange={setFilter} />
 
       {loading ? (
-        <Spinner />
-      ) : filtered.length === 0 ? (
-        <div style={styles.empty}>
-          <Droplets size={48} color="#E8E8E8" />
-          <h3 style={styles.emptyTitle}>No requests found</h3>
-          <p style={styles.emptyText}>
-            {filter === 'all' ? "You haven't created any requests yet" : `No ${filter} requests`}
-          </p>
-          <button style={styles.createEmptyBtn} onClick={() => navigate('/create-request')}>
-            <Plus size={16} /> Create Request
-          </button>
-        </div>
+        <Spinner fullPage label="Loading your requests" />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon={<Droplets size={24} />}
+          title={filter === 'all' ? 'No requests yet' : `No ${filter} requests`}
+          description={
+            filter === 'all'
+              ? 'Posting a request notifies donors with a compatible blood type in your city.'
+              : 'Try a different filter to see your other requests.'
+          }
+          action={
+            filter === 'all' && (
+              <Button onClick={() => navigate('/create-request')}>
+                <Plus size={16} /> Post your first request
+              </Button>
+            )
+          }
+        />
       ) : (
-        <div style={styles.list}>
-          {filtered.map(request => {
-            const statusConfig = STATUS_CONFIG[request.status];
+        <div className={cards.stack}>
+          {visible.map((request) => {
+            const busy = busyId === request.id;
+            const isOpen = request.status === 'open';
+
             return (
-              <div key={request.id} style={styles.card}>
-                <div style={styles.cardLeft}>
-                  <div style={styles.bloodBadge}>{request.blood_type}</div>
-                  <div style={styles.cardInfo}>
-                    <h3 style={styles.patientName}>{request.patient_name}</h3>
-                    <div style={styles.details}>
-                      <div style={styles.detailRow}><Building2 size={14} color="#7F8C8D" /><span>{request.hospital_name}</span></div>
-                      <div style={styles.detailRow}><MapPin size={14} color="#7F8C8D" /><span>{request.city}</span></div>
-                      <div style={styles.detailRow}><Droplets size={14} color="#C0392B" /><span style={{ color: '#C0392B', fontWeight: '500' }}>{request.units_needed} unit(s)</span></div>
-                      <div style={styles.detailRow}><Clock size={14} color="#7F8C8D" /><span>{getTimeAgo(request.created_at)}</span></div>
-                    </div>
-                  </div>
+              <Card key={request.id} padding="lg">
+                <div className={cards.tags}>
+                  <span className={cards.bloodType}>{request.blood_type}</span>
+                  <Badge variant={REQUEST_STATUS_VARIANTS[request.status] || 'neutral'}>
+                    {REQUEST_STATUS_LABELS[request.status] || request.status}
+                  </Badge>
+                  <Badge variant={URGENCY_VARIANTS[request.urgency] || 'neutral'} dot>
+                    {URGENCY_LABELS[request.urgency] || request.urgency}
+                  </Badge>
                 </div>
-                <div style={styles.cardRight}>
-                  <div style={{ ...styles.urgencyBadge, backgroundColor: URGENCY_COLORS[request.urgency] + '20', color: URGENCY_COLORS[request.urgency] }}>
-                    {URGENCY_LABELS[request.urgency]}
-                  </div>
-                  <div style={{ ...styles.statusBadge, backgroundColor: statusConfig.bg, color: statusConfig.color }}>
-                    {statusConfig.label}
-                  </div>
-                  <div style={styles.actions}>
-                    {request.status === 'open' && (
-                      <>
-                        <button style={styles.fulfillBtn} onClick={() => handleMarkFulfilled(request.id)}>
-                          <CheckCircle size={14} /> Fulfilled
-                        </button>
-                        <button style={styles.chatBtn} onClick={() => handleChat(request.id)}>
-                          <MessageCircle size={14} /> Chat
-                        </button>
-                      </>
-                    )}
-                    <button style={styles.deleteBtn} onClick={() => handleDelete(request.id)}>
-                      <Trash2 size={14} /> Delete
-                    </button>
-                  </div>
+
+                <h3 className={cards.name}>{request.patient_name}</h3>
+                <p className={cards.meta}>
+                  {request.units_needed} unit{request.units_needed === 1 ? '' : 's'} needed
+                </p>
+
+                <div className={cards.details}>
+                  <span className={cards.detail}>
+                    <Building2 size={15} />
+                    <span className={cards.detailValue}>{request.hospital_name}</span>
+                  </span>
+                  <span className={cards.detail}>
+                    <MapPin size={15} />
+                    <span className={cards.detailValue}>{request.city}</span>
+                  </span>
+                  <span className={cards.detail}>
+                    <Clock size={15} />
+                    <span className={cards.detailValue}>Posted {getTimeAgo(request.created_at)}</span>
+                  </span>
                 </div>
-              </div>
+
+                {request.notes && <p className={cards.quote}>{request.notes}</p>}
+
+                <div className={cards.actions}>
+                  <Button variant="secondary" size="sm" onClick={() => handleChat(request.id)}>
+                    <MessageCircle size={15} /> Chat with donor
+                  </Button>
+
+                  {isOpen && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleMarkFulfilled(request.id)}
+                      disabled={busy}
+                    >
+                      <CheckCircle size={15} /> Mark fulfilled
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(request.id)}
+                    disabled={busy}
+                  >
+                    <Trash2 size={15} /> Delete
+                  </Button>
+                </div>
+              </Card>
             );
           })}
         </div>
       )}
     </Layout>
   );
-};
-
-const styles = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  headerTitle: { fontSize: '32px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  headerSubtitle: { color: '#7F8C8D', marginTop: '4px' },
-  createBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: '#C0392B', color: 'white', borderRadius: '10px', fontSize: '15px', fontWeight: '500', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', border: 'none' },
-  filterTabs: { display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' },
-  filterTab: { padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'white', color: '#7F8C8D', fontSize: '14px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' },
-  filterTabActive: { padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#C0392B', color: 'white', fontSize: '14px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: '500' },
-  loading: { textAlign: 'center', padding: '60px', color: '#7F8C8D' },
-  empty: { textAlign: 'center', padding: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
-  emptyTitle: { fontSize: '20px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  emptyText: { color: '#7F8C8D', fontSize: '14px' },
-  createEmptyBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: '#C0392B', color: 'white', borderRadius: '10px', fontSize: '15px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif', marginTop: '8px' },
-  list: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  card: { backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' },
-  cardLeft: { display: 'flex', alignItems: 'flex-start', gap: '16px' },
-  bloodBadge: { backgroundColor: '#FADBD8', color: '#C0392B', padding: '8px 14px', borderRadius: '12px', fontSize: '18px', fontWeight: '700', flexShrink: 0 },
-  cardInfo: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  patientName: { fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#2C3E50' },
-  details: { display: 'flex', flexWrap: 'wrap', gap: '12px' },
-  detailRow: { display: 'flex', alignItems: 'center', gap: '6px', color: '#7F8C8D', fontSize: '13px' },
-  cardRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' },
-  urgencyBadge: { padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500' },
-  statusBadge: { padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500' },
-  actions: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
-  fulfillBtn: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#EAFAF1', color: '#27AE60', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  chatBtn: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#EBF5FB', color: '#2980B9', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
-  deleteBtn: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#FADBD8', color: '#C0392B', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer', border: 'none', fontFamily: 'DM Sans, sans-serif' },
 };
 
 export default MyRequests;
