@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from fastapi import (
     APIRouter,
@@ -10,6 +10,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from pydantic import ValidationError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db, SessionLocal
@@ -23,7 +24,12 @@ from app.models.chat import ChatMessage
 from app.models.donation import Donation
 from app.models.kidney_match import KidneyMatch
 from app.models.user import User
-from app.schemas.chat import ChatMessageResponse, ChatMessageSend, WsTicketResponse
+from app.schemas.chat import (
+    ChatMessageResponse,
+    ChatMessageSend,
+    UnreadSummary,
+    WsTicketResponse,
+)
 from app.socket.connection_manager import manager
 
 router = APIRouter()
@@ -140,6 +146,9 @@ async def websocket_endpoint(
             await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
             return
         user_id = user.id
+        # Captured now so every outgoing message can carry it without a lookup
+        # per message. The socket is short-lived relative to a name change.
+        user_name = user.full_name
     finally:
         db.close()
 
@@ -192,6 +201,9 @@ async def websocket_endpoint(
                 message_data = {
                     "id": chat_message.id,
                     "sender_id": user_id,
+                    # Included so the recipient can show "New message from
+                    # Nimal" without a second request just to resolve a name.
+                    "sender_name": user_name,
                     "receiver_id": receiver_id,
                     "donation_id": inbound.donation_id,
                     "kidney_match_id": inbound.kidney_match_id,
@@ -267,7 +279,54 @@ def _history(db: Session, user_id: int, thread_filter):
     return messages
 
 
-@router.get("/unread-count", summary="Unread message count")
+@router.get("/unread", response_model=UnreadSummary, summary="Unread messages, grouped")
+def get_unread_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Unread totals plus a per-conversation breakdown.
+
+    Grouping happens in SQL rather than by loading every message and counting in
+    Python — this stays a single indexed aggregate no matter how many messages
+    the user has.
+
+    Conversation keys are "kidney:<id>" and "donation:<id>" so the client can use
+    one flat map instead of tracking two id spaces that can collide.
+    """
+    rows = (
+        db.query(
+            ChatMessage.kidney_match_id,
+            ChatMessage.donation_id,
+            func.count(ChatMessage.id).label("unread"),
+        )
+        .filter(
+            ChatMessage.receiver_id == current_user.id,
+            ChatMessage.is_read.is_(False),
+        )
+        .group_by(ChatMessage.kidney_match_id, ChatMessage.donation_id)
+        .all()
+    )
+
+    by_conversation: Dict[str, int] = {}
+    for kidney_match_id, donation_id, unread in rows:
+        if kidney_match_id is not None:
+            by_conversation[f"kidney:{kidney_match_id}"] = unread
+        elif donation_id is not None:
+            by_conversation[f"donation:{donation_id}"] = unread
+
+    return UnreadSummary(
+        total=sum(by_conversation.values()),
+        by_conversation=by_conversation,
+    )
+
+
+@router.get(
+    "/unread-count",
+    summary="Unread message count",
+    deprecated=True,
+    description="Superseded by GET /chat/unread, which also returns a per-conversation breakdown.",
+)
 def get_unread_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

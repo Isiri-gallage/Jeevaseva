@@ -41,6 +41,7 @@
 }
 
 .menuButton {
+  position: relative;
   display: grid;
   place-items: center;
   width: 40px;
@@ -52,6 +53,26 @@
 
 .menuButton:hover {
   background-color: var(--color-surface-hover);
+}
+
+/*
+ * Unread indicator on the hamburger.
+ *
+ * On mobile the whole rail — and therefore the numeric badge inside it — is
+ * hidden, so without this there is no unread signal at all on a phone. A dot
+ * rather than a count: the exact number is available one tap away, and a
+ * two-digit badge on a 40px control crowds the icon.
+ */
+.menuDot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--color-blood);
+  /* Ring in the bar's own colour so the dot stays legible against the icon. */
+  box-shadow: 0 0 0 2px var(--color-bg);
 }
 
 .topbarBrand {
@@ -70,7 +91,7 @@
   height: 26px;
   border-radius: var(--radius-sm);
   background-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-on-accent);
 }
 
 /* ─── Content ──────────────────────────────────────────────*/

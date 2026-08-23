@@ -1,33 +1,17 @@
-import re
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-VALID_BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
-
-# bcrypt silently truncates anything past 72 bytes, so reject longer inputs
-# rather than accept a password whose tail is ignored.
-MAX_PASSWORD_LENGTH = 72
-MIN_PASSWORD_LENGTH = 8
-
-
-def validate_password_strength(value: str) -> str:
-    if len(value) < MIN_PASSWORD_LENGTH:
-        raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
-    if len(value) > MAX_PASSWORD_LENGTH:
-        raise ValueError(f"Password must be at most {MAX_PASSWORD_LENGTH} characters")
-    if not re.search(r"[A-Za-z]", value):
-        raise ValueError("Password must contain at least one letter")
-    if not re.search(r"[0-9]", value):
-        raise ValueError("Password must contain at least one number")
-    return value
-
-
-def validate_phone(value: str) -> str:
-    cleaned = re.sub(r"[\s-]+", "", value)
-    if not re.match(r"^[0-9]{10}$", cleaned):
-        raise ValueError("Phone must be 10 digits")
-    return cleaned
+# Rules live in one module so every schema enforces the same thing. These are
+# re-exported because existing code imports them from here.
+from app.schemas.validators import (  # noqa: F401
+    MAX_PASSWORD_LENGTH,
+    MIN_PASSWORD_LENGTH,
+    VALID_BLOOD_TYPES,
+    validate_blood_type,
+    validate_password_strength,
+    validate_phone,
+)
 
 
 class UserRegister(BaseModel):
@@ -62,9 +46,7 @@ class UserRegister(BaseModel):
     @field_validator("blood_type")
     @classmethod
     def blood_type_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_BLOOD_TYPES:
-            raise ValueError(f"Blood type must be one of {VALID_BLOOD_TYPES}")
-        return v
+        return validate_blood_type(v)
 
     @field_validator("city")
     @classmethod
@@ -111,6 +93,10 @@ class UserResponse(BaseModel):
     city: Optional[str]
     is_verified: bool
     is_admin: bool
+    # Was missing, so the profile page read `undefined` and rendered every
+    # signed-in user as "Suspended" — a state that cannot exist, since login
+    # rejects inactive accounts with 403 before a token is ever issued.
+    is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -144,9 +130,7 @@ class UserUpdate(BaseModel):
     @field_validator("blood_type")
     @classmethod
     def blood_type_must_be_valid(cls, v: Optional[str]) -> Optional[str]:
-        if v and v not in VALID_BLOOD_TYPES:
-            raise ValueError(f"Blood type must be one of {VALID_BLOOD_TYPES}")
-        return v
+        return validate_blood_type(v) if v else v
 
 
 class Token(BaseModel):

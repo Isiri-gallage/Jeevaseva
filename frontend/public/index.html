@@ -19,8 +19,14 @@
     <!-- Tells the browser to render native controls and scrollbars in both. -->
     <meta name="color-scheme" content="light dark" />
 
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      SVG first: browsers that understand it prefer it, and it stays crisp at
+      every size and pixel density. The .ico is the fallback for Safari below
+      16.4 and older Edge. `sizes="any"` stops Chrome downloading both.
+    -->
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
     <!--

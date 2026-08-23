@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ChatSocketProvider } from './context/ChatSocketContext';
+import ChatNotifications from './components/ChatNotifications';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -153,6 +155,44 @@ function AppRoutes() {
   );
 }
 
+/*
+ * Everything that needs the signed-in user lives here rather than in App,
+ * because useAuth() can only be called below AuthProvider.
+ *
+ * ChatSocketProvider wraps the router so the socket stays open across every
+ * route — that is what lets a message arriving while you are on the kidney
+ * board raise a notification at all.
+ */
+function AuthedApp() {
+  const { user } = useAuth();
+
+  return (
+    <ChatSocketProvider user={user}>
+      <BrowserRouter>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            // Toasts render outside the app tree, so they read the tokens
+            // straight off :root to stay in sync with the active theme.
+            style: {
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--text-sm)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-lg)',
+            },
+          }}
+        />
+        {/* Inside the router: it needs useNavigate and the current path. */}
+        <ChatNotifications user={user} />
+        <AppRoutes />
+      </BrowserRouter>
+    </ChatSocketProvider>
+  );
+}
+
 function App() {
   return (
     // ThemeProvider sits outermost so the appearance is resolved before
@@ -160,25 +200,7 @@ function App() {
     // gets a white flash on every page load.
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              // Toasts render outside the app tree, so they read the tokens
-              // straight off :root to stay in sync with the active theme.
-              style: {
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'var(--text-sm)',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-lg)',
-              },
-            }}
-          />
-          <AppRoutes />
-        </BrowserRouter>
+        <AuthedApp />
       </AuthProvider>
     </ThemeProvider>
   );

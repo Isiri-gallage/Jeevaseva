@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Heart, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import { useChatSocket } from '../../context/ChatSocketContext';
 import styles from './Layout.module.css';
 
 /**
@@ -12,6 +13,7 @@ import styles from './Layout.module.css';
  */
 const Layout = ({ children }) => {
   const [navOpen, setNavOpen] = useState(false);
+  const { unreadTotal } = useChatSocket();
   const location = useLocation();
 
   // Close the drawer whenever the route changes, otherwise tapping a link on
@@ -38,10 +40,15 @@ const Layout = ({ children }) => {
           <button
             className={styles.menuButton}
             onClick={() => setNavOpen(true)}
-            aria-label="Open navigation"
+            aria-label={
+              unreadTotal > 0
+                ? `Open navigation, ${unreadTotal} unread message${unreadTotal === 1 ? '' : 's'}`
+                : 'Open navigation'
+            }
             aria-expanded={navOpen}
           >
             <Menu size={20} />
+            {unreadTotal > 0 && <span className={styles.menuDot} aria-hidden="true" />}
           </button>
 
           <span className={styles.topbarBrand}>

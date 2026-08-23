@@ -1,13 +1,27 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { CheckCircle, Droplets, Edit2, Heart, Shield, X } from 'lucide-react';
+import { CheckCircle, Droplets, Edit2, Heart, Monitor, Moon, Shield, Sun, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { authAPI } from '../../services/api';
 import Layout, { PageHeader } from '../../components/layout/Layout';
 import { Badge, Button, Card, Input, Select } from '../../components/ui';
 import { BLOOD_TYPES } from '../../utils/helpers';
 import { getErrorMessage, getFieldErrors } from '../../utils/apiError';
 import styles from './Profile.module.css';
+
+/*
+ * Three options rather than a two-way toggle.
+ *
+ * "System" is a distinct choice from light or dark: it means "keep following
+ * the OS", which a binary switch cannot express once the user has picked a
+ * side. ThemeContext already stores the preference this way.
+ */
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light', icon: <Sun size={15} /> },
+  { value: 'dark', label: 'Dark', icon: <Moon size={15} /> },
+  { value: 'system', label: 'System', icon: <Monitor size={15} /> },
+];
 
 const roleOf = (user) => {
   if (user?.is_admin) return { key: 'admin', label: 'Administrator' };
@@ -17,6 +31,7 @@ const roleOf = (user) => {
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
+  const { preference, setTheme } = useTheme();
 
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -239,6 +254,46 @@ const Profile = () => {
                   >
                     {user?.is_donor ? 'Registered' : 'Not a donor'}
                   </span>
+                </div>
+              </div>
+
+              {/* ─── Appearance ───────────────────────────
+                * Moved here from the sidebar. Theme is a set-once preference,
+                * not something worth a permanent slot in primary navigation. */}
+              <h2 className={styles.sectionTitle}>Appearance</h2>
+
+              <div
+                className={styles.settingRow}
+                role="radiogroup"
+                aria-label="Appearance"
+              >
+                <div>
+                  <span className={styles.settingLabel}>Theme</span>
+                  <span className={styles.settingHint}>
+                    Choose a light or dark appearance, or follow your device
+                    setting automatically.
+                  </span>
+                </div>
+
+                <div className={styles.segmented}>
+                  {THEME_OPTIONS.map((option) => {
+                    const active = preference === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={[styles.segment, active && styles.segmentActive]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => setTheme(option.value)}
+                      >
+                        {option.icon}
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </>

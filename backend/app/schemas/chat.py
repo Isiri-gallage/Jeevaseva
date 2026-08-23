@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -39,3 +39,14 @@ class WsTicketResponse(BaseModel):
     """Short-lived credential used to open a chat WebSocket."""
     ticket: str
     expires_in: int
+
+
+class UnreadSummary(BaseModel):
+    """
+    Unread totals for the current user.
+
+    `by_conversation` is keyed "kidney:<id>" / "donation:<id>" so one flat map
+    covers both conversation types without the two id spaces colliding.
+    """
+    total: int
+    by_conversation: Dict[str, int] = Field(default_factory=dict)

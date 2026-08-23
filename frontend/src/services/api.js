@@ -82,7 +82,9 @@ export const adminAPI = {
 export const chatAPI = {
   getHistory: (donationId) => api.get(`/chat/history/${donationId}`),
   getKidneyHistory: (matchId) => api.get(`/chat/history/kidney/${matchId}`),
-  getUnreadCount: () => api.get('/chat/unread-count'),
+  // Totals plus a per-conversation breakdown, so individual threads can be
+  // badged rather than only showing one global number.
+  getUnread: () => api.get('/chat/unread'),
   // Short-lived credential for opening the chat socket.
   getWsTicket: () => api.post('/chat/ws-ticket'),
 };

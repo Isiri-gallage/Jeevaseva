@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Check, CheckCheck, MessageSquare, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { chatAPI, donorsAPI, kidneyAPI, chatSocketUrl } from '../../services/api';
+import { useChatSocket } from '../../context/ChatSocketContext';
+import { chatAPI, donorsAPI, kidneyAPI } from '../../services/api';
 import { Spinner } from '../../components/ui';
 import { getErrorMessage } from '../../utils/apiError';
 import styles from './Chat.module.css';
@@ -27,93 +28,87 @@ const Chat = ({ isKidney = false }) => {
   const navigate = useNavigate();
   const { donationId, matchId } = useParams();
 
+  const { connected, subscribe, sendMessage, clearConversation } = useChatSocket();
+
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
-  const [connected, setConnected] = useState(false);
   const [title, setTitle] = useState('Chat');
 
-  const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Matches the backend's key format for the unread map.
+  const threadKey = isKidney ? `kidney:${matchId}` : `donation:${donationId}`;
+
+  // Load the transcript and clear this thread's unread badge. Fetching the
+  // history is what marks the messages read server-side, so the local badge is
+  // cleared here to match rather than waiting for the next poll.
   useEffect(() => {
-    let socket = null;
     let cancelled = false;
 
     const loadHistory = async () => {
+      setLoading(true);
       try {
         if (isKidney) {
           const { data: match } = await kidneyAPI.getMatchDetails(matchId);
+          if (cancelled) return;
           setTitle(user.id === match.donor_id ? match.patient_name : match.donor_name);
           const { data } = await chatAPI.getKidneyHistory(matchId);
+          if (cancelled) return;
           setMessages(data);
         } else {
           const { data: donation } = await donorsAPI.getDonation(donationId);
+          if (cancelled) return;
           setTitle(`Blood request #${donation.request_id}`);
           const { data } = await chatAPI.getHistory(donationId);
+          if (cancelled) return;
           setMessages(data);
         }
+        clearConversation(threadKey);
       } catch (error) {
-        toast.error(getErrorMessage(error, 'Could not load this conversation'));
+        if (!cancelled) toast.error(getErrorMessage(error, 'Could not load this conversation'));
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    // Swap the access token for a 60-second, socket-only ticket. The browser
-    // WebSocket API cannot send an Authorization header, and a long-lived token
-    // in the URL would end up in proxy and access logs.
-    const openSocket = async () => {
-      try {
-        const { data } = await chatAPI.getWsTicket();
-        if (cancelled) return;
-
-        socket = new WebSocket(chatSocketUrl(data.ticket));
-
-        socket.onopen = () => setConnected(true);
-        socket.onclose = () => setConnected(false);
-        socket.onerror = () => setConnected(false);
-
-        socket.onmessage = (event) => {
-          const payload = JSON.parse(event.data);
-
-          if (payload.error) {
-            toast.error(payload.detail || 'Message could not be sent');
-            return;
-          }
-
-          const belongsHere = isKidney
-            ? payload.kidney_match_id === Number(matchId)
-            : payload.donation_id === Number(donationId);
-
-          // The server echoes the sender's own message back with a delivery
-          // flag, so the same id can arrive twice. De-duplicate on id.
-          if (belongsHere) {
-            setMessages((previous) =>
-              previous.some((message) => message.id === payload.id)
-                ? previous.map((message) => (message.id === payload.id ? payload : message))
-                : [...previous, payload]
-            );
-          }
-        };
-
-        socketRef.current = socket;
-      } catch (error) {
-        setConnected(false);
-        toast.error('Could not connect to chat');
-      }
-    };
-
     loadHistory();
-    openSocket();
+    return () => { cancelled = true; };
+  }, [donationId, matchId, isKidney, user.id, threadKey, clearConversation]);
 
-    return () => {
-      cancelled = true;
-      if (socket) socket.close();
-      socketRef.current = null;
-    };
-  }, [donationId, matchId, isKidney, user.id]);
+  /*
+   * Listen on the shared app-level socket instead of opening one here.
+   *
+   * The socket now lives in ChatSocketProvider so it stays connected on every
+   * route — that is what makes unread badges and message toasts possible at
+   * all. This page just filters the stream down to its own conversation.
+   */
+  useEffect(() => {
+    return subscribe((payload) => {
+      if (payload.error) {
+        toast.error(payload.detail || 'Message could not be sent');
+        return;
+      }
+
+      const belongsHere = isKidney
+        ? payload.kidney_match_id === Number(matchId)
+        : payload.donation_id === Number(donationId);
+
+      if (!belongsHere) return;
+
+      // The server echoes the sender's own message back with a delivery flag,
+      // so the same id can arrive twice. De-duplicate on id.
+      setMessages((previous) =>
+        previous.some((message) => message.id === payload.id)
+          ? previous.map((message) => (message.id === payload.id ? payload : message))
+          : [...previous, payload]
+      );
+
+      // Arrived while we are looking at the thread, so it is already read.
+      if (payload.sender_id !== user.id) clearConversation(threadKey);
+    });
+  }, [subscribe, isKidney, matchId, donationId, user.id, threadKey, clearConversation]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -121,15 +116,22 @@ const Chat = ({ isKidney = false }) => {
 
   const send = () => {
     const text = draft.trim();
-    if (!text || socketRef.current?.readyState !== WebSocket.OPEN) return;
+    if (!text) return;
 
     // No receiver_id: the server resolves the recipient from the conversation,
     // so a client cannot address someone it has no relationship with.
-    socketRef.current.send(JSON.stringify(
+    const sent = sendMessage(
       isKidney
         ? { kidney_match_id: Number(matchId), message: text }
         : { donation_id: Number(donationId), message: text }
-    ));
+    );
+
+    if (!sent) {
+      // The draft is deliberately preserved so a dropped connection never
+      // silently eats what the user typed.
+      toast.error('Not connected. Your message was not sent.');
+      return;
+    }
 
     setDraft('');
     inputRef.current?.focus();

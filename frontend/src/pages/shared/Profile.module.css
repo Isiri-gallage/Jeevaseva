@@ -28,7 +28,7 @@
   margin-bottom: var(--space-4);
   border-radius: var(--radius-2xl);
   background-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-on-accent);
   font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
 }
@@ -98,7 +98,18 @@
   letter-spacing: var(--tracking-normal);
 }
 
+/*
+ * Section heading.
+ *
+ * The top margin lives here rather than on the blocks above it. Relying on the
+ * preceding element's bottom margin means the spacing is only correct when
+ * that particular element happens to have one — which is why "Appearance"
+ * sat flush against the status tiles while "Account status" looked fine.
+ * Owning both sides here makes every section consistent, including any added
+ * later.
+ */
 .sectionTitle {
+  margin-top: var(--space-10);
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-5);
   border-bottom: 1px solid var(--color-border);
@@ -107,6 +118,12 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-tertiary);
+}
+
+/* The first heading sits directly below the card's own padding, so extra
+ * space above it would just look like a misaligned card. */
+.sectionTitle:first-of-type {
+  margin-top: 0;
 }
 
 .divider {
@@ -153,4 +170,84 @@
   margin-top: var(--space-6);
   padding-top: var(--space-5);
   border-top: 1px solid var(--color-border);
+}
+
+/* ─── Appearance setting ───────────────────────────────────
+ * A settings row: description on the left, control on the right, stacking on
+ * narrow screens so the segmented control never gets squeezed. */
+.settingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.settingLabel {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.settingHint {
+  display: block;
+  margin-top: var(--space-1);
+  max-width: 46ch;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/*
+ * Segmented control, the iOS pattern.
+ *
+ * All options visible at once, so the available choices and the current one
+ * are readable in a single glance — unlike a toggle, which hides half its
+ * state, or a dropdown, which hides all of it.
+ */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  padding: var(--space-2) var(--space-4);
+  min-height: 34px;
+  border-radius: calc(var(--radius-md) - 3px);
+
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.segment:hover:not(.segmentActive) {
+  color: var(--color-text);
+}
+
+/* The selected segment lifts onto the surface colour rather than being tinted
+ * with the accent — this is a preference, not a primary action. */
+.segmentActive {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 520px) {
+  .segmented { width: 100%; }
+  .segment { flex: 1; justify-content: center; }
 }

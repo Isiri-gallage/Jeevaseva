@@ -1,10 +1,21 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, field_validator
+
 from app.models.kidney_request import KidneyRequestStatus
 from app.models.kidney_match import KidneyMatchStatus
+from app.schemas.validators import (
+    MAX_PLACE_LENGTH,
+    clean_optional_text,
+    clean_text,
+    validate_blood_type,
+    validate_donor_age,
+    validate_patient_age,
+    validate_phone,
+)
 
-# Kidney Request Schemas
+# ─── Kidney requests ───────────────────────────────────────
 
 
 class KidneyRequestCreate(BaseModel):
@@ -16,6 +27,46 @@ class KidneyRequestCreate(BaseModel):
     hospital_city: str
     medical_details: Optional[str] = None
     dialysis_duration: Optional[str] = None
+
+    @field_validator("patient_name")
+    @classmethod
+    def _name(cls, v: str) -> str:
+        return clean_text(v, "Patient name")
+
+    @field_validator("patient_age")
+    @classmethod
+    def _age(cls, v: int) -> int:
+        return validate_patient_age(v)
+
+    @field_validator("blood_type")
+    @classmethod
+    def _blood(cls, v: str) -> str:
+        return validate_blood_type(v)
+
+    @field_validator("contact_number")
+    @classmethod
+    def _phone(cls, v: str) -> str:
+        return validate_phone(v)
+
+    @field_validator("hospital_name")
+    @classmethod
+    def _hospital(cls, v: str) -> str:
+        return clean_text(v, "Hospital name", maximum=MAX_PLACE_LENGTH)
+
+    @field_validator("hospital_city")
+    @classmethod
+    def _city(cls, v: str) -> str:
+        return clean_text(v, "Hospital city", maximum=MAX_PLACE_LENGTH)
+
+    @field_validator("medical_details")
+    @classmethod
+    def _details(cls, v: Optional[str]) -> Optional[str]:
+        return clean_optional_text(v, "Medical details")
+
+    @field_validator("dialysis_duration")
+    @classmethod
+    def _dialysis(cls, v: Optional[str]) -> Optional[str]:
+        return clean_optional_text(v, "Dialysis duration", maximum=100)
 
 
 class KidneyRequestResponse(BaseModel):
@@ -39,7 +90,13 @@ class KidneyRequestUpdate(BaseModel):
     status: Optional[KidneyRequestStatus] = None
     medical_details: Optional[str] = None
 
-# Kidney Donor Schemas
+    @field_validator("medical_details")
+    @classmethod
+    def _details(cls, v: Optional[str]) -> Optional[str]:
+        return clean_optional_text(v, "Medical details")
+
+
+# ─── Kidney donors ─────────────────────────────────────────
 
 
 class KidneyDonorCreate(BaseModel):
@@ -50,6 +107,41 @@ class KidneyDonorCreate(BaseModel):
     city: str
     medical_conditions: Optional[str] = None
     reason_to_donate: Optional[str] = None
+
+    @field_validator("full_name")
+    @classmethod
+    def _name(cls, v: str) -> str:
+        return clean_text(v, "Full name")
+
+    @field_validator("age")
+    @classmethod
+    def _age(cls, v: int) -> int:
+        return validate_donor_age(v)
+
+    @field_validator("blood_type")
+    @classmethod
+    def _blood(cls, v: str) -> str:
+        return validate_blood_type(v)
+
+    @field_validator("contact_number")
+    @classmethod
+    def _phone(cls, v: str) -> str:
+        return validate_phone(v)
+
+    @field_validator("city")
+    @classmethod
+    def _city(cls, v: str) -> str:
+        return clean_text(v, "City", maximum=MAX_PLACE_LENGTH)
+
+    @field_validator("medical_conditions")
+    @classmethod
+    def _conditions(cls, v: Optional[str]) -> Optional[str]:
+        return clean_optional_text(v, "Medical conditions")
+
+    @field_validator("reason_to_donate")
+    @classmethod
+    def _reason(cls, v: Optional[str]) -> Optional[str]:
+        return clean_optional_text(v, "Reason to donate")
 
 
 class KidneyDonorResponse(BaseModel):
@@ -68,12 +160,26 @@ class KidneyDonorResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Kidney Match Schemas
+# ─── Kidney matches ────────────────────────────────────────
 
 
 class KidneyMatchCreate(BaseModel):
     request_id: int
     message: Optional[str] = None
+
+    @field_validator("request_id")
+    @classmethod
+    def _request_id(cls, v: int) -> int:
+        # A non-positive id can never match a row; rejecting here turns a
+        # confusing 404 into a clear validation error.
+        if v < 1:
+            raise ValueError("request_id must be a positive integer")
+        return v
+
+    @field_validator("message")
+    @classmethod
+    def _message(cls, v: Optional[str]) -> Optional[str]:
+        return clean_optional_text(v, "Message", maximum=1000)
 
 
 class KidneyMatchUpdate(BaseModel):
@@ -93,6 +199,7 @@ class KidneyMatchResponse(BaseModel):
 
 
 class KidneyMatchDetailResponse(BaseModel):
+    """A match joined with both parties' details, for the connections view."""
     id: int
     donor_id: int
     request_id: int

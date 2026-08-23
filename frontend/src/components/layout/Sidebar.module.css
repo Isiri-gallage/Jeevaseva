@@ -74,7 +74,7 @@
   height: 32px;
   border-radius: var(--radius-md);
   background-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-on-accent);
 }
 
 /* display:block on both — a <span> is inline, so without this the name and the
@@ -182,9 +182,26 @@
   white-space: nowrap;
 }
 
-/* Count pill pushed to the far end of the row. */
+/* Unread count, pushed to the far end of the row. */
 .itemBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-inline-start: auto;
+
+  /* min-width + pill radius: "3" renders as a circle, "12" as a stadium,
+   * instead of the digit-count changing the badge's height. */
+  min-width: 20px;
+  height: 20px;
+  padding-inline: 6px;
+  border-radius: var(--radius-pill);
+
+  background-color: var(--color-blood);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── Footer ───────────────────────────────────────────────*/
@@ -217,7 +234,7 @@
   height: 34px;
   border-radius: var(--radius-md);
   background-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-on-accent);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }

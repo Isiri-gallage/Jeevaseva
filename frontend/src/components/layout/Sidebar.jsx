@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   BarChart2, Droplets, FilePlus2, Heart, HeartHandshake, LayoutGrid,
-  LogOut, Moon, Sun, User, Users, ClipboardList, Inbox,
+  LogOut, User, Users, ClipboardList, Inbox,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useChatSocket } from '../../context/ChatSocketContext';
 import styles from './Sidebar.module.css';
 
 /*
@@ -22,7 +22,9 @@ import styles from './Sidebar.module.css';
 const KIDNEY_GROUP = {
   label: 'Kidney',
   items: [
-    { icon: <LayoutGrid size={17} />, label: 'Kidney board', path: '/kidney', exact: true },
+    // `showUnread` marks the row that owns conversations, so the badge follows
+    // the nav data rather than being special-cased in the render.
+    { icon: <LayoutGrid size={17} />, label: 'Kidney board', path: '/kidney', exact: true, showUnread: true },
     { icon: <FilePlus2 size={17} />, label: 'Post a request', path: '/kidney/post-request' },
     { icon: <ClipboardList size={17} />, label: 'My requests', path: '/kidney/my-requests' },
     { icon: <HeartHandshake size={17} />, label: 'Register as donor', path: '/kidney/register-donor' },
@@ -89,7 +91,7 @@ const ROLE_LABEL = {
 
 const Sidebar = ({ open, onClose }) => {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { unreadTotal } = useChatSocket();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -162,6 +164,17 @@ const Sidebar = ({ open, onClose }) => {
                   >
                     <span className={styles.itemIcon}>{item.icon}</span>
                     <span className={styles.itemLabel}>{item.label}</span>
+
+                    {item.showUnread && unreadTotal > 0 && (
+                      <span
+                        className={styles.itemBadge}
+                        // The number alone reads as "99" to a screen reader with
+                        // no indication of what it counts.
+                        aria-label={`${unreadTotal} unread message${unreadTotal === 1 ? '' : 's'}`}
+                      >
+                        {unreadTotal > 99 ? '99+' : unreadTotal}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -185,16 +198,10 @@ const Sidebar = ({ open, onClose }) => {
             </span>
           </button>
 
+          {/* Appearance lives on the Profile page — it is a set-once
+            * preference, not something that earns permanent space in primary
+            * navigation. */}
           <div className={styles.footerActions}>
-            <button
-              className={styles.footerButton}
-              onClick={toggleTheme}
-              aria-label={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}
-            >
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
-              {isDark ? 'Light' : 'Dark'}
-            </button>
-
             <button
               className={`${styles.footerButton} ${styles.logout}`}
               onClick={logout}

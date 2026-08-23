@@ -63,7 +63,7 @@
   height: 28px;
   border-radius: var(--radius-sm);
   background-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-on-accent);
 }
 
 .navActions {
@@ -144,7 +144,7 @@
 .titleAccent {
   /* Gradient text: paint the gradient on the background, clip it to the glyph
    * shapes, then make the text itself transparent to reveal it. */
-  background: linear-gradient(135deg, var(--color-accent) 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, var(--color-accent) 0%, #17A08B 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -201,7 +201,7 @@
 .heroCardGlyph {
   font-size: clamp(5rem, 14vw, 7.5rem);
   line-height: 1;
-  filter: drop-shadow(0 12px 32px rgba(88, 86, 214, 0.28));
+  filter: drop-shadow(0 12px 32px rgba(15, 110, 96, 0.30));
 }
 
 /* Two concentric rings, counter-rotating. Slow enough to feel ambient rather

@@ -27,7 +27,7 @@ def create_kidney_request(
     """Patient creates a kidney request"""
     request = KidneyRequest(
         patient_id=current_user.id,
-        **data.dict()
+        **data.model_dump()
     )
     db.add(request)
     db.commit()
@@ -130,7 +130,7 @@ def register_kidney_donor(
 
     donor = KidneyDonor(
         user_id=current_user.id,
-        **data.dict()
+        **data.model_dump()
     )
     db.add(donor)
     db.commit()
