@@ -1,4 +1,4 @@
-# RaktaSeva
+# JeevaSeva
 
 **Connecting kidney patients in Sri Lanka with living donors.**
 
@@ -123,7 +123,7 @@ Migrations run automatically on backend startup.
 **1. Create the database**
 
 ```bash
-createdb raktaseva
+createdb jeevaseva
 ```
 
 **2. Backend**
